@@ -170,6 +170,20 @@
     margin:2px 0 4px;
   }
   .phrase-note{ font-size:13px; color:var(--muted); }
+  .hw-hint{ color:var(--accent); text-decoration:underline; text-decoration-style:dotted; text-underline-offset:3px; }
+
+  /* hard words + meaning card */
+  .hardword{ font:inherit; color:var(--accent); background:none; border:0; padding:0; cursor:pointer;
+    text-decoration:underline; text-decoration-style:dotted; text-decoration-color:var(--accent); text-underline-offset:5px; }
+  .hardword:hover{ filter:brightness(1.12); }
+  .hardword:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:3px; }
+  .wordcard{ display:flex; align-items:flex-start; gap:11px; margin-top:14px;
+    border:1px solid var(--line); background:var(--surface-2); border-radius:var(--r-sm); padding:11px 13px; }
+  .wordcard[hidden]{ display:none !important; }
+  .wordcard .wc-body{ flex:1 1 auto; min-width:0; }
+  .wordcard .wc-word{ font-family:var(--display); font-weight:600; font-size:16px; color:var(--ink); }
+  .wordcard .wc-mean{ font-size:13.5px; color:var(--muted); margin-top:2px; }
+  .wordcard .wc-play{ flex:none; }
 
   .row{ display:flex; gap:10px; flex-wrap:wrap; }
   .row.mt{ margin-top:16px; }
@@ -383,7 +397,17 @@
       </div>
 
       <p class="phrase" id="phraseText">Loading a phrase…</p>
-      <p class="phrase-note">Read the sentence aloud clearly, at a natural pace.</p>
+      <p class="phrase-note">Read it aloud at a natural pace. Tap an <span class="hw-hint">underlined</span> word for its meaning and sound.</p>
+
+      <div class="wordcard" id="wordCard" hidden>
+        <button class="btn sm wc-play" id="wcPlay" type="button" aria-label="Play the word">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+        </button>
+        <div class="wc-body">
+          <div class="wc-word" id="wcWord"></div>
+          <div class="wc-mean" id="wcMean"></div>
+        </div>
+      </div>
 
       <div class="row mt">
         <button class="btn grow" id="btnListen" type="button">
@@ -577,21 +601,84 @@
      Short, complete sentences graded by difficulty.
      In production this would load from a JSON/CSV file in S3. */
   // Workplace phrases built around commonly-mispronounced business words.
+  // Workplace phrases. Two hard words per sentence, each with a short meaning.
+  // The word audio is spoken by the browser voice (free, on-device).
   const LIBRARY=[
-    {t:"Let's schedule the meeting for Monday.", lvl:"Easy"},
-    {t:"Please send me the report today.", lvl:"Easy"},
-    {t:"I will call the client this afternoon.", lvl:"Easy"},
-    {t:"Thank you for your quick response.", lvl:"Easy"},
-    {t:"Could you share the agenda before the call?", lvl:"Medium"},
-    {t:"My colleague will handle the presentation.", lvl:"Medium"},
-    {t:"We need to prioritise the urgent tasks.", lvl:"Medium"},
-    {t:"The deadline for the project is Wednesday.", lvl:"Medium"},
-    {t:"Please confirm your availability for Thursday.", lvl:"Medium"},
-    {t:"Our clientele expects punctual, professional service.", lvl:"Hard"},
-    {t:"The entrepreneur negotiated a favourable contract.", lvl:"Hard"},
-    {t:"Let's collaborate on the quarterly deliverables.", lvl:"Hard"},
-    {t:"I appreciate your thorough and prompt feedback.", lvl:"Hard"},
-    {t:"My colleague queried the miscellaneous expenses.", lvl:"Hard"}
+    {t:"Please confirm your availability for Thursday.", lvl:"Easy", words:[
+      {w:"confirm", meaning:"to say yes and make something certain"},
+      {w:"availability", meaning:"the free time you have to do something"}]},
+    {t:"I will forward the document immediately.", lvl:"Easy", words:[
+      {w:"forward", meaning:"to send something on to another person"},
+      {w:"immediately", meaning:"right now, without any delay"}]},
+    {t:"Kindly acknowledge receipt of this email.", lvl:"Easy", words:[
+      {w:"acknowledge", meaning:"to confirm that you received or noticed something"},
+      {w:"receipt", meaning:"the act of receiving something"}]},
+    {t:"Let's schedule a brief meeting tomorrow.", lvl:"Easy", words:[
+      {w:"schedule", meaning:"to set a time for something to happen"},
+      {w:"brief", meaning:"short, not lasting long"}]},
+    {t:"Please review the attachment before the call.", lvl:"Easy", words:[
+      {w:"review", meaning:"to look over something carefully"},
+      {w:"attachment", meaning:"a file sent along with an email"}]},
+    {t:"We appreciate your prompt response.", lvl:"Easy", words:[
+      {w:"appreciate", meaning:"to be thankful for something"},
+      {w:"prompt", meaning:"quick and on time"}]},
+    {t:"The invoice is due by the end of the month.", lvl:"Easy", words:[
+      {w:"invoice", meaning:"a bill that lists what is owed"},
+      {w:"due", meaning:"needing to be paid or done by a set time"}]},
+    {t:"Could you clarify the requirements for me?", lvl:"Medium", words:[
+      {w:"clarify", meaning:"to make something clearer and easier to understand"},
+      {w:"requirements", meaning:"the things that are needed"}]},
+    {t:"I will coordinate with the vendor today.", lvl:"Medium", words:[
+      {w:"coordinate", meaning:"to organise people or tasks to work together"},
+      {w:"vendor", meaning:"a person or company that sells or supplies goods"}]},
+    {t:"Please ensure the report is accurate.", lvl:"Medium", words:[
+      {w:"ensure", meaning:"to make sure something happens"},
+      {w:"accurate", meaning:"correct, with no mistakes"}]},
+    {t:"My colleague will handle the presentation.", lvl:"Medium", words:[
+      {w:"colleague", meaning:"a person you work with"},
+      {w:"presentation", meaning:"a talk that shows information to others"}]},
+    {t:"We need to prioritise the urgent tasks.", lvl:"Medium", words:[
+      {w:"prioritise", meaning:"to deal with the most important things first"},
+      {w:"urgent", meaning:"needing attention very soon"}]},
+    {t:"The deadline for the project is Wednesday.", lvl:"Medium", words:[
+      {w:"deadline", meaning:"the latest time by which something must be finished"},
+      {w:"project", meaning:"a planned piece of work"}]},
+    {t:"Please escalate the issue to the manager.", lvl:"Medium", words:[
+      {w:"escalate", meaning:"to raise a matter to a higher level"},
+      {w:"issue", meaning:"a problem that needs solving"}]},
+    {t:"Let's collaborate on the quarterly report.", lvl:"Medium", words:[
+      {w:"collaborate", meaning:"to work together on something"},
+      {w:"quarterly", meaning:"happening once every three months"}]},
+    {t:"The client requested a detailed proposal.", lvl:"Medium", words:[
+      {w:"detailed", meaning:"having many small facts or parts"},
+      {w:"proposal", meaning:"a written plan or offer"}]},
+    {t:"We should allocate the budget carefully.", lvl:"Medium", words:[
+      {w:"allocate", meaning:"to divide and give out for a purpose"},
+      {w:"budget", meaning:"the money planned for something"}]},
+    {t:"Please summarise the key points briefly.", lvl:"Medium", words:[
+      {w:"summarise", meaning:"to give the main idea in a few words"},
+      {w:"briefly", meaning:"in a short way, using few words"}]},
+    {t:"The manager approved the revised schedule.", lvl:"Hard", words:[
+      {w:"approved", meaning:"agreed to something officially"},
+      {w:"revised", meaning:"changed and improved"}]},
+    {t:"Our team exceeded the monthly target.", lvl:"Hard", words:[
+      {w:"exceeded", meaning:"went beyond what was expected"},
+      {w:"target", meaning:"a goal you aim to reach"}]},
+    {t:"Our clientele expects punctual, professional service.", lvl:"Hard", words:[
+      {w:"clientele", meaning:"all the customers of a business"},
+      {w:"punctual", meaning:"arriving or done exactly on time"}]},
+    {t:"The entrepreneur negotiated a favourable contract.", lvl:"Hard", words:[
+      {w:"entrepreneur", meaning:"a person who starts and runs a business"},
+      {w:"negotiated", meaning:"discussed in order to reach an agreement"}]},
+    {t:"I appreciate your thorough and prompt feedback.", lvl:"Hard", words:[
+      {w:"thorough", meaning:"complete and careful, leaving nothing out"},
+      {w:"feedback", meaning:"comments that help you improve"}]},
+    {t:"My colleague queried the miscellaneous expenses.", lvl:"Hard", words:[
+      {w:"queried", meaning:"asked a question about something"},
+      {w:"miscellaneous", meaning:"of various different kinds, mixed"}]},
+    {t:"The committee will reconvene next Wednesday.", lvl:"Hard", words:[
+      {w:"committee", meaning:"a group of people chosen to decide things"},
+      {w:"reconvene", meaning:"to come together and meet again"}]}
   ];
   const FILLERS=["um","uh","umm","uhh","er","erm","hmm","ah","aah","anh"];
 
@@ -643,13 +730,46 @@
   function showPhrase(i){
     state.idx=((i%LIBRARY.length)+LIBRARY.length)%LIBRARY.length;
     current=LIBRARY[state.idx];
-    $("#phraseText").textContent=current.t;
+    renderPhrase();
+    $("#wordCard").hidden=true;
     $("#lvl").textContent=current.lvl; $("#lvl").dataset.lvl=current.lvl;
     $("#phraseIdx").textContent=(state.idx+1)+" / "+LIBRARY.length;
     resetTake();
     $("#result").hidden=true;
     save();
   }
+
+  /* ---------------- hard words: meaning + audio ---------------- */
+  const WK=s=>s.toLowerCase().replace(/[^a-z]/g,"");   // word key, ignores case & punctuation
+  function renderPhrase(){
+    const el=$("#phraseText"); el.textContent="";
+    const hard=current.words||[];
+    current.t.split(/(\s+)/).forEach(tok=>{
+      if(!tok) return;
+      if(/^\s+$/.test(tok)){ el.appendChild(document.createTextNode(tok)); return; }
+      const hit=hard.find(h=>WK(h.w)===WK(tok));
+      if(hit){
+        const b=document.createElement("button");
+        b.type="button"; b.className="hardword";
+        b.textContent=tok; b.dataset.w=hit.w; b.dataset.mean=hit.meaning;
+        el.appendChild(b);
+      } else el.appendChild(document.createTextNode(tok));
+    });
+  }
+  let wcCurrent="";
+  function speakWord(w){
+    if(!("speechSynthesis" in window)) return;
+    try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(w); u.lang=state.lang; u.rate=.8; speechSynthesis.speak(u); }catch(e){}
+  }
+  $("#phraseText").addEventListener("click",e=>{
+    const b=e.target.closest(".hardword"); if(!b) return;
+    wcCurrent=b.dataset.w;
+    $("#wcWord").textContent=b.dataset.w;
+    $("#wcMean").textContent=b.dataset.mean;
+    $("#wordCard").hidden=false;
+    speakWord(wcCurrent);
+  });
+  $("#wcPlay").onclick=()=>{ if(wcCurrent) speakWord(wcCurrent); };
 
   /* ---------------- TTS ---------------- */
   $("#btnListen").onclick=()=>{
