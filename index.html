@@ -373,7 +373,6 @@
 </head>
 <body>
 
-
 <div class="wrap">
 
   <div class="top">
@@ -577,6 +576,14 @@
       </select>
     </div>
 
+    <div class="field">
+      <label class="fl">Student (for progress tracking)</label>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span id="setStudent" style="flex:1 1 auto; font-family:var(--mono); font-size:12px; color:var(--muted);">not set</span>
+        <button class="btn sm" id="btnChangeStudent" type="button">Change</button>
+      </div>
+    </div>
+
     <details class="dev">
       <summary>Backend contract for developers</summary>
       <pre id="contract"></pre>
@@ -585,6 +592,29 @@
   <div class="dlg-actions">
     <button class="btn sm" id="dlgReset" type="button">Reset session</button>
     <button class="btn accent sm" id="dlgClose" type="button">Done</button>
+  </div>
+</dialog>
+
+<dialog id="idDlg">
+  <div class="dlg-body">
+    <h3>Who's practising?</h3>
+    <p class="sub-note">Enter your class code and roll number once. This lets your teacher see your progress. No password needed.</p>
+    <div class="field">
+      <label class="fl" for="idCode">Class code</label>
+      <input type="text" id="idCode" placeholder="e.g. 7B" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="field">
+      <label class="fl" for="idRoll">Roll number</label>
+      <input type="text" id="idRoll" placeholder="e.g. 12" autocomplete="off" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label class="fl" for="idName">First name (optional)</label>
+      <input type="text" id="idName" placeholder="e.g. Priya" autocomplete="off">
+    </div>
+    <div class="hint" id="idHint"></div>
+  </div>
+  <div class="dlg-actions">
+    <button class="btn accent sm" id="idSave" type="button">Save</button>
   </div>
 </dialog>
 
@@ -684,7 +714,7 @@
 
   /* ---------------- settings + progress (per-viewer only) ---------------- */
   const SKEY="phrasecoach.v1";
-  const state={ live:false, engine:"azure", lang:"en-US", sound:true, idx:0, theme:null };
+  const state={ live:false, engine:"azure", lang:"en-US", sound:true, idx:0, theme:null, student:{code:"",roll:"",name:""} };
   const session={ attempts:0, scores:[], cost:0 };
 
   function load(){
@@ -698,7 +728,7 @@
   }
   function save(){
     try{ localStorage.setItem(SKEY, JSON.stringify({
-      settings:{live:state.live,engine:state.engine,lang:state.lang,sound:state.sound,theme:state.theme,idx:state.idx},
+      settings:{live:state.live,engine:state.engine,lang:state.lang,sound:state.sound,theme:state.theme,idx:state.idx,student:state.student},
       session
     })); }catch(e){}
   }
@@ -998,6 +1028,40 @@
     return (takeDur||0)/3600*AZURE_RATE_PER_HOUR;                     // demo estimate (Azure rate)
   }
 
+  /* Phase 1 — send one finished attempt to log.php so teachers can see progress.
+     Fire-and-forget: if there's no student identity, or the request fails, we
+     stay silent and never block the student's practice. */
+  function logAttempt(r, engine){
+    const stu=state.student||{};
+    if(!stu.code || !stu.roll) return;                 // not signed in yet -> skip quietly
+    const ax=r.axes||{};
+    const val=v=>(typeof v==="number" && isFinite(v)) ? v : null;   // null (not 0) for absent axes
+    const longest = (r.pauses && r.pauses.length) ? Math.max.apply(null, r.pauses.map(p=>p.gapMs||0)) : 0;
+    const mispron = (r.words||[]).filter(w=>w.errorType==="Mispronunciation").map(w=>w.word);
+    const skipped = (r.words||[]).filter(w=>w.errorType==="Omission").map(w=>w.word);
+    const payload={
+      class_code: stu.code, roll_no: stu.roll, name: stu.name||"",
+      phrase_idx: state.idx+1,
+      difficulty: current ? current.lvl : null,
+      engine,
+      overall: val(r.overall),
+      fluency: val(ax.fluency), flow: val(ax.flow),
+      pronunciation: val(ax.pronunciation), completeness: val(ax.completeness),
+      pace_wpm: (r.wpm!=null && isFinite(r.wpm)) ? Math.round(r.wpm) : null,
+      pause_count: r.pauses ? r.pauses.length : null,
+      longest_pause_ms: Math.round(longest),
+      lead_ms: (r.leadMs!=null && isFinite(r.leadMs)) ? Math.round(r.leadMs) : null,
+      filler_count: r.fillerWords ? r.fillerWords.length : null,
+      mispronounced: mispron, skipped,
+      duration_s: (takeDur!=null && isFinite(takeDur)) ? Math.round(takeDur*100)/100 : null,
+      lang: state.lang
+    };
+    try{
+      fetch("log.php",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload), keepalive:true }).catch(()=>{});
+    }catch(e){/* offline / blocked -> ignore */}
+  }
+
   btnScore.onclick=async()=>{
     if(!takeBlob){ toast("Record your reading first."); return; }
     btnScore.disabled=true; btnScore.textContent="Scoring…"; hideScoreError();
@@ -1008,6 +1072,7 @@
       const cost = state.live ? costFor(engine, raw) : null;
       takeResults[engine] = { overall:result.overall, cost:cost||0 };
       renderResult(result, engine, cost);
+      logAttempt(result, engine);            // Phase 1: record for teacher progress (quiet, non-blocking)
     }catch(e){
       showScoreError((e && e.message) ? e.message : String(e));
       toast("Scoring failed — see the red box.");
@@ -1445,6 +1510,30 @@
   $("#dlgClose").onclick=closeDlg;
   $("#dlgReset").onclick=()=>{ session.attempts=0; session.scores=[]; session.cost=0; save(); renderProgress(); renderCost(0); $("#costAttempt").textContent="$0.0000"; toast("Session reset."); };
 
+  /* ---------------- student identity (Phase 1) ---------------- */
+  const idDlg=$("#idDlg");
+  function refreshStudentLabel(){
+    const stu=state.student||{};
+    $("#setStudent").textContent = (stu.code && stu.roll)
+      ? (stu.code+" · #"+stu.roll+(stu.name?" · "+stu.name:"")) : "not set";
+  }
+  function openId(){
+    const stu=state.student||{};
+    $("#idCode").value=stu.code||""; $("#idRoll").value=stu.roll||""; $("#idName").value=stu.name||"";
+    $("#idHint").textContent="";
+    if(typeof idDlg.showModal==="function") idDlg.showModal(); else idDlg.setAttribute("open","");
+    setTimeout(()=>{ try{ $("#idCode").focus(); }catch(e){} },50);
+  }
+  $("#idSave").onclick=()=>{
+    const code=$("#idCode").value.trim(), roll=$("#idRoll").value.trim(), name=$("#idName").value.trim();
+    if(!code || !roll){ $("#idHint").textContent="Class code and roll number are both needed."; return; }
+    state.student={ code, roll, name };
+    save(); refreshStudentLabel();
+    if(idDlg.open && typeof idDlg.close==="function") idDlg.close(); else idDlg.removeAttribute("open");
+    toast("Signed in as "+code+" · #"+roll+".");
+  };
+  $("#btnChangeStudent").onclick=()=>{ closeDlg(); openId(); };   // leave settings, open sign-in on top
+
   $("#contract").textContent=
 `POST score.php        (same folder, multipart/form-data)
   audio      the recording (16 kHz mono WAV — the
@@ -1477,6 +1566,8 @@ pause detection, and the overall score from that.`;
   window.addEventListener("resize", sizeScope);
   window.addEventListener("beforeunload", ()=>{ if(stream) stream.getTracks().forEach(t=>t.stop()); });
   refreshMode(); renderProgress(); sizeScope(); showPhrase(state.idx||0);
+  refreshStudentLabel();
+  if(!(state.student && state.student.code && state.student.roll)) openId();   // first run: ask who's practising
 })();
 </script>
 

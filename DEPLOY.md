@@ -29,6 +29,24 @@ Azure + Gemini keys. This file is git-ignored, so pulls never touch it.
 Claude pushes a new version to GitHub. In cPanel: open the repo >
 **Update from Remote** (pull) > **Deploy HEAD Commit** (if using .cpanel.yml). Done.
 
+## Progress tracking / teacher analytics (one-time, optional)
+Each finished attempt is saved to a MySQL database so students see their streak
+and teachers can see who is practising. It is **optional** — if you skip this,
+the app simply doesn't log (practice and scoring still work).
+
+1. cPanel > **MySQL Databases**:
+   - Create a database, e.g. `englishbuddy`.
+   - Create a user with a strong password.
+   - Add the user to the database with **ALL PRIVILEGES**.
+   - Note the cPanel-prefixed names (e.g. `vna10l90oed1_englishbuddy`,
+     `vna10l90oed1_ebuser`).
+2. In `config.php` fill in `$DB_HOST` (`localhost`), `$DB_NAME`, `$DB_USER`,
+   `$DB_PASS` (see `config.sample.php`).
+3. Deploy. The `students` and `attempts` tables are created automatically on the
+   first logged attempt — nothing else to run.
+4. Students sign in once (class code + roll number) in the app; a "Change"
+   button in Settings lets them switch. No passwords are stored.
+
 ## Indian voice audio (one-time)
 The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
 words and the Listen button, falling back to the browser voice if a clip is missing.

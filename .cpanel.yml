@@ -11,6 +11,8 @@ deployment:
     - /bin/cp -f index.html $DEPLOYPATH
     - /bin/cp -f score.php $DEPLOYPATH
     - /bin/cp -f score_gemini.php $DEPLOYPATH
+    - /bin/cp -f db.php $DEPLOYPATH
+    - /bin/cp -f log.php $DEPLOYPATH
     - /bin/cp -f .htaccess $DEPLOYPATH
     - /bin/cp -f config.sample.php $DEPLOYPATH
     - /bin/cp -f generate_audio.php $DEPLOYPATH
