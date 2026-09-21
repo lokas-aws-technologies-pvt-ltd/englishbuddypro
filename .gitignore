@@ -1,0 +1,7 @@
+# Secrets — NEVER commit. Lives only on the server.
+config.php
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log

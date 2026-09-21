@@ -1,0 +1,1355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<style>
+  html,body{margin:0;}
+  img{max-width:100%;height:auto;}
+  [hidden]{display:none!important;}
+  :root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);}
+</style>
+<title>Phrase Coach</title>
+<style>
+  :root{
+    /* light palette (chosen, not defaulted) */
+    --ground:   #f5f2ec;
+    --surface:  #ffffff;
+    --surface-2:#efeae1;
+    --ink:      #1b2a29;
+    --muted:    #5f6f6c;
+    --dim:      #8a9793;
+    --line:     #e2dcd1;
+    --line-soft:#ece7dd;
+
+    --accent:   #0f766e;   /* jade — interactive */
+    --accent-ink:#ffffff;
+    --accent-soft:#d7ece8;
+
+    --good:     #2f9e6f;
+    --warn:     #c9820a;
+    --crit:     #cf4b34;
+    --good-soft:#dcefe4;
+    --warn-soft:#f6ecd4;
+    --crit-soft:#f6ded7;
+
+    --display:"Fraunces", Georgia, "Times New Roman", serif;
+    --ui:"Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --r:14px;
+    --r-sm:9px;
+    --gutter:clamp(16px,4vw,26px);
+    --maxw:560px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:   #0e1518;
+      --surface:  #16211f;
+      --surface-2:#1d2a28;
+      --ink:      #e9efec;
+      --muted:    #9db0aa;
+      --dim:      #6c807b;
+      --line:     #263432;
+      --line-soft:#1f2b29;
+
+      --accent:   #4fd1b8;
+      --accent-ink:#06201c;
+      --accent-soft:#123330;
+
+      --good:     #4fd18c;
+      --warn:     #e6b24d;
+      --crit:     #f0836b;
+      --good-soft:#123528;
+      --warn-soft:#33290f;
+      --crit-soft:#3a1f18;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:   #0e1518;
+    --surface:  #16211f;
+    --surface-2:#1d2a28;
+    --ink:      #e9efec;
+    --muted:    #9db0aa;
+    --dim:      #6c807b;
+    --line:     #263432;
+    --line-soft:#1f2b29;
+
+    --accent:   #4fd1b8;
+    --accent-ink:#06201c;
+    --accent-soft:#123330;
+
+    --good:     #4fd18c;
+    --warn:     #e6b24d;
+    --crit:     #f0836b;
+    --good-soft:#123528;
+    --warn-soft:#33290f;
+    --crit-soft:#3a1f18;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--ground); color:var(--ink); }
+  body{
+    font-family:var(--ui);
+    font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding-left:var(--gutter); padding-right:var(--gutter);
+    padding-block:18px 40px;
+  }
+
+  h1,h2,h3{ margin:0; }
+  button{ font-family:var(--ui); cursor:pointer; }
+  button:focus-visible, input:focus-visible, .chip:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+
+  /* ---------- top bar ---------- */
+  .top{
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:18px;
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; min-width:0; }
+  .brand h1{
+    font-family:var(--display); font-optical-sizing:auto;
+    font-weight:600; font-size:23px; letter-spacing:-.01em;
+  }
+  .brand .tag{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--dim); white-space:nowrap;
+  }
+  .top .sp{ flex:1 1 auto; }
+  .iconbtn{
+    background:var(--surface); border:1px solid var(--line);
+    color:var(--muted); border-radius:999px; padding:7px 10px;
+    font-size:13px; line-height:1;
+  }
+  .iconbtn:hover{ border-color:var(--accent); color:var(--ink); }
+
+  .mode{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.08em;
+    text-transform:uppercase; padding:5px 9px; border-radius:999px;
+    border:1px solid var(--line); color:var(--muted); background:var(--surface);
+    white-space:nowrap;
+  }
+  .mode .dot{ width:7px; height:7px; border-radius:50%; background:var(--warn); }
+  .mode.live .dot{ background:var(--good); }
+
+  /* ---------- cards ---------- */
+  .card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--r); padding:18px;
+  }
+  .stack{ display:grid; gap:16px; }
+
+  .eyebrow{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--dim);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+
+  /* phrase */
+  .phrase-head{ display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .level{
+    font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    padding:3px 8px; border-radius:999px; border:1px solid var(--line);
+    color:var(--muted); background:var(--surface-2);
+  }
+  .level[data-lvl="Easy"]{ color:var(--good); border-color:var(--good); }
+  .level[data-lvl="Medium"]{ color:var(--warn); border-color:var(--warn); }
+  .level[data-lvl="Hard"]{ color:var(--crit); border-color:var(--crit); }
+  .phrase{
+    font-family:var(--display); font-optical-sizing:auto;
+    font-weight:400; font-size:clamp(24px,6.4vw,32px); line-height:1.28;
+    letter-spacing:-.01em; text-wrap:balance; color:var(--ink);
+    margin:2px 0 4px;
+  }
+  .phrase-note{ font-size:13px; color:var(--muted); }
+
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .row.mt{ margin-top:16px; }
+
+  button.btn{
+    border-radius:var(--r-sm); font-size:14px; font-weight:500;
+    padding:11px 15px; border:1px solid var(--line);
+    background:var(--surface-2); color:var(--ink);
+    transition:background .12s, border-color .12s, transform .06s;
+    display:inline-flex; align-items:center; gap:8px; justify-content:center;
+  }
+  button.btn:hover:not(:disabled){ border-color:var(--accent); }
+  button.btn:active:not(:disabled){ transform:translateY(1px); }
+  button.btn:disabled{ opacity:.45; cursor:not-allowed; }
+  button.btn.accent{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600; }
+  button.btn.accent:hover:not(:disabled){ filter:brightness(1.05); }
+  button.btn.rec{ background:var(--crit); border-color:var(--crit); color:#fff; font-weight:600; }
+  button.btn.grow{ flex:1 1 auto; }
+  button.btn.ghost{ background:transparent; }
+  button.btn.sm{ padding:8px 12px; font-size:13px; }
+
+  .ic{ width:16px; height:16px; display:inline-block; flex:none; }
+
+  /* recorder bay */
+  .bay{
+    margin-top:16px; border:1px solid var(--line-soft); border-radius:var(--r-sm);
+    background:var(--ground); padding:12px;
+  }
+  .bay-head{
+    display:flex; align-items:center; justify-content:space-between;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--dim); margin-bottom:9px;
+  }
+  .tally{ display:inline-flex; align-items:center; gap:7px; color:var(--dim); }
+  .tally .lamp{ width:8px; height:8px; border-radius:50%; background:var(--dim); }
+  .tally.live{ color:var(--crit); }
+  .tally.live .lamp{ background:var(--crit); box-shadow:0 0 0 3px var(--crit-soft); animation:pulse 1.3s ease-in-out infinite; }
+  @keyframes pulse{ 50%{ opacity:.4; } }
+  #scope{ display:block; width:100%; height:52px; }
+  .clock{ font-family:var(--mono); font-size:11px; color:var(--muted); }
+  audio{ width:100%; height:34px; margin-top:10px; }
+
+  /* ---------- result ---------- */
+  #result[hidden]{ display:none !important; }
+  .demo-flag{
+    font-size:12.5px; color:var(--warn); background:var(--warn-soft);
+    border:1px solid var(--warn); border-radius:var(--r-sm);
+    padding:9px 12px; margin-bottom:16px; display:flex; gap:8px; align-items:flex-start;
+  }
+  .demo-flag.hide{ display:none; }
+
+  .micwarn{
+    font-size:12.5px; color:var(--warn); background:var(--warn-soft);
+    border:1px solid var(--warn); border-radius:var(--r-sm);
+    padding:9px 12px; margin-top:14px; display:flex; gap:8px; align-items:flex-start;
+  }
+  .micwarn[hidden]{ display:none !important; }
+  .micwarn b{ color:var(--ink); }
+
+  /* speedometer gauges */
+  .mode-note{ font-size:12.5px; color:var(--muted); background:var(--surface-2);
+    border:1px solid var(--line); border-radius:var(--r-sm); padding:9px 12px; margin-bottom:16px; }
+  .mode-note[hidden]{ display:none !important; }
+  .mode-note b{ color:var(--ink); }
+
+  .gauge-overall{ display:flex; align-items:center; gap:16px; }
+  .gbig{ flex:none; width:190px; max-width:52vw; }
+  .gauges{ display:flex; flex-wrap:wrap; gap:10px 6px; margin-top:18px; }
+  .gauges .gcell{ flex:1 1 130px; min-width:120px; display:flex; flex-direction:column; align-items:center; gap:2px;
+    border:1px solid var(--line-soft); border-radius:var(--r-sm); padding:10px 6px 12px; background:var(--ground); }
+  .gcell .glabel{ font-size:11.5px; color:var(--muted); text-align:center; line-height:1.25; }
+  .gauge{ display:block; width:100%; height:auto; }
+  .gauge .needle{ transition: transform 1s cubic-bezier(.2,.8,.2,1); transform-box:fill-box; }
+  @media (prefers-reduced-motion: reduce){ .gauge .needle{ transition:none; } }
+  .gauge .gval{ font-family:var(--display); font-weight:600; }
+  .gauge .gden{ font-family:var(--mono); }
+
+  .overall{ display:flex; align-items:center; gap:18px; }
+  .ring{ position:relative; width:104px; height:104px; flex:none; }
+  .ring svg{ transform:rotate(-90deg); }
+  .ring .val{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:0;
+  }
+  .ring .num{ font-family:var(--display); font-weight:600; font-size:30px; line-height:1; }
+  .ring .den{ font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.05em; margin-top:3px; }
+  .verdict h2{ font-family:var(--display); font-weight:600; font-size:20px; letter-spacing:-.01em; margin-bottom:3px; }
+  .verdict p{ margin:0; font-size:13.5px; color:var(--muted); }
+
+  .compare{ display:flex; gap:10px; margin-top:16px; }
+  .compare[hidden]{ display:none !important; }
+  .cmp-cell{ flex:1 1 0; text-align:center; border:1px solid var(--line); border-radius:var(--r-sm); padding:10px 8px; background:var(--ground); }
+  .cmp-cell.now{ border-color:var(--accent); background:var(--accent-soft); }
+  .cmp-eng{ font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); }
+  .cmp-score{ font-family:var(--display); font-weight:600; font-size:24px; line-height:1.1; margin-top:3px; }
+  .cmp-cost{ font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px; }
+
+  .subs{ display:grid; gap:12px; margin-top:18px; }
+  .sub .lab{
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    font-size:13px; color:var(--muted); margin-bottom:5px;
+  }
+  .sub .lab b{ font-family:var(--mono); font-weight:500; font-size:13px; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .bar{ height:7px; border-radius:4px; background:var(--surface-2); overflow:hidden; }
+  .bar > i{ display:block; height:100%; border-radius:4px; background:var(--accent); transition:width .5s cubic-bezier(.2,.7,.2,1); }
+  .bar > i.good{ background:var(--good); } .bar > i.warn{ background:var(--warn); } .bar > i.crit{ background:var(--crit); }
+
+  .section-t{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--dim); margin:20px 0 10px;
+  }
+  /* word breakdown */
+  .words{ font-family:var(--display); font-size:19px; line-height:1.9; }
+  .w{ position:relative; padding:1px 1px; border-radius:3px; }
+  .w.ok{ color:var(--ink); }
+  .w.mis{ color:var(--warn); text-decoration:underline wavy var(--warn); text-underline-offset:4px; }
+  .w.om{ color:var(--crit); text-decoration:line-through; opacity:.75; }
+  .w.ins{ color:var(--crit); background:var(--crit-soft); font-style:italic; }
+  .legend{ display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px; font-family:var(--ui); font-size:11.5px; color:var(--muted); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .flags{ display:grid; gap:8px; margin-top:6px; }
+  .flag{
+    display:flex; gap:9px; align-items:flex-start;
+    font-size:13.5px; border:1px solid var(--line); border-radius:var(--r-sm);
+    padding:9px 11px; background:var(--ground);
+  }
+  .flag .k{ font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin-top:2px; flex:none; width:52px; }
+  .flag.good .k{ color:var(--good); } .flag.warn .k{ color:var(--warn); } .flag.crit .k{ color:var(--crit); }
+
+  .coach{
+    font-family:var(--display); font-size:15.5px; line-height:1.5; color:var(--ink);
+    border-left:3px solid var(--accent); padding:2px 0 2px 13px; margin-top:8px;
+  }
+  .meta{
+    font-family:var(--mono); font-size:10.5px; color:var(--dim);
+    display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:16px; padding-top:14px; border-top:1px solid var(--line-soft);
+  }
+
+  /* progress strip */
+  .progress{ display:flex; align-items:center; gap:14px; }
+  .progress .big{ font-family:var(--display); font-weight:600; font-size:26px; line-height:1; }
+  .progress .lil{ font-size:12px; color:var(--muted); }
+  .dots{ display:flex; gap:5px; flex-wrap:wrap; }
+  .dots i{ width:9px; height:9px; border-radius:50%; background:var(--surface-2); }
+  .dots i.good{ background:var(--good); } .dots i.warn{ background:var(--warn); } .dots i.crit{ background:var(--crit); }
+
+  /* settings drawer */
+  dialog{
+    border:1px solid var(--line); border-radius:var(--r); padding:0;
+    background:var(--surface); color:var(--ink); max-width:min(94vw,460px); width:100%;
+  }
+  dialog::backdrop{ background:rgba(10,15,15,.55); }
+  .dlg-body{ padding:18px; }
+  .dlg-body h3{ font-family:var(--display); font-weight:600; font-size:19px; margin-bottom:4px; }
+  .dlg-body .sub-note{ font-size:13px; color:var(--muted); margin-bottom:16px; }
+  .field{ margin-bottom:14px; }
+  label.fl{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+  input[type=text], select{
+    width:100%; padding:10px 12px; border-radius:var(--r-sm);
+    border:1px solid var(--line); background:var(--ground); color:var(--ink);
+    font-family:var(--mono); font-size:13px;
+  }
+  .switch{ display:flex; align-items:center; gap:10px; font-size:14px; }
+  .switch input{ width:18px; height:18px; accent-color:var(--accent); }
+  .hint{ font-size:11.5px; color:var(--dim); margin-top:6px; }
+  details.dev{ margin-top:4px; }
+  details.dev summary{ font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); cursor:pointer; }
+  details.dev pre{
+    font-family:var(--mono); font-size:11px; line-height:1.55; color:var(--muted);
+    background:var(--ground); border:1px solid var(--line-soft); border-radius:var(--r-sm);
+    padding:11px; overflow:auto; white-space:pre; margin:9px 0 0;
+  }
+  .dlg-actions{ display:flex; gap:10px; justify-content:flex-end; padding:14px 18px; border-top:1px solid var(--line-soft); }
+
+  .scoreErr{ margin-top:14px; border:1px solid var(--crit); background:var(--crit-soft); border-radius:var(--r-sm); padding:11px 12px; }
+  .scoreErr[hidden]{ display:none !important; }
+  .scoreErr-head{ display:flex; justify-content:space-between; align-items:center; gap:10px;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--crit); margin-bottom:8px; }
+  .scoreErr pre{ margin:0; font-family:var(--mono); font-size:12px; line-height:1.5; color:var(--ink);
+    white-space:pre-wrap; word-break:break-word; user-select:text; -webkit-user-select:text; }
+
+  .footnote{ font-size:11.5px; color:var(--dim); text-align:center; margin-top:22px; line-height:1.6; }
+  .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <h1>Phrase&nbsp;Coach</h1>
+      <span class="tag">read · speak · score</span>
+    </div>
+    <span class="sp"></span>
+    <span class="mode" id="modePill" title="Scoring source"><span class="dot"></span><span id="modeText">Demo</span></span>
+    <button class="iconbtn" id="btnTheme" aria-label="Toggle light or dark theme" title="Theme">◐</button>
+    <button class="iconbtn" id="btnSettings" aria-label="Settings" title="Settings">⚙</button>
+  </div>
+
+  <div class="stack">
+
+    <!-- ============ PRACTICE CARD ============ -->
+    <section class="card" id="practice">
+      <div class="phrase-head">
+        <span class="level" id="lvl" data-lvl="Easy">Easy</span>
+        <span class="eyebrow" style="flex:1 1 auto; justify-content:flex-end;">Phrase <span id="phraseIdx" style="margin-left:6px;color:var(--muted)">1 / 12</span></span>
+      </div>
+
+      <p class="phrase" id="phraseText">Loading a phrase…</p>
+      <p class="phrase-note">Read the sentence aloud clearly, at a natural pace.</p>
+
+      <div class="row mt">
+        <button class="btn grow" id="btnListen" type="button">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+          Listen
+        </button>
+        <button class="btn grow" id="btnSkip" type="button">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4l10 8-10 8V4z"/><path d="M19 5v14"/></svg>
+          New phrase
+        </button>
+      </div>
+
+      <div class="micwarn" id="micWarn" hidden>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4M2 2l20 20"/></svg>
+        <span><b>Microphone blocked in this preview.</b> Claude's artifact frame doesn't allow mic access, so recording can't start here. Host the page on your own site to record — or tap <b>Score a sample</b> below to see how scoring looks.</span>
+      </div>
+
+      <div class="bay">
+        <div class="bay-head">
+          <span class="tally" id="tally"><span class="lamp"></span><span id="tallyText">Ready</span></span>
+          <span class="clock" id="clock">0.0s</span>
+        </div>
+        <canvas id="scope" width="600" height="104" aria-hidden="true"></canvas>
+      </div>
+
+      <div class="row mt">
+        <button class="btn rec grow" id="btnRec" type="button">
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>
+          Record
+        </button>
+        <button class="btn grow" id="btnStop" type="button" disabled>
+          <svg class="ic" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          Stop
+        </button>
+      </div>
+
+      <audio id="player" controls preload="none" hidden></audio>
+
+      <div class="row mt" id="sampleRow" hidden>
+        <button class="btn ghost sm grow" id="btnSample" type="button">Score a sample take</button>
+      </div>
+
+      <div class="row mt">
+        <button class="btn accent grow" id="btnScore" type="button" disabled>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Score my reading
+        </button>
+      </div>
+
+      <div class="scoreErr" id="scoreErr" hidden>
+        <div class="scoreErr-head">
+          <span>Scoring error</span>
+          <button type="button" id="btnCopyErr" class="btn ghost sm">Copy</button>
+        </div>
+        <pre id="scoreErrText"></pre>
+      </div>
+    </section>
+
+    <!-- ============ RESULT ============ -->
+    <section class="card" id="result" hidden aria-live="polite">
+      <div class="mode-note" id="modeNote" hidden></div>
+
+      <div class="gauge-overall">
+        <div id="gaugeBig" class="gbig"></div>
+        <div class="verdict">
+          <h2 id="verdictH">Nice work</h2>
+          <p id="verdictP">Here's how your reading scored.</p>
+        </div>
+      </div>
+
+      <div class="compare" id="compare" hidden><!-- A/B cells --></div>
+
+      <div class="gauges" id="gauges"><!-- small dials --></div>
+
+      <div id="wordSection">
+        <div class="section-t">Word by word</div>
+        <div class="words" id="words"></div>
+        <div class="legend">
+          <span><i style="background:var(--ink)"></i>Clear</span>
+          <span><i style="background:var(--warn)"></i>Mispronounced</span>
+          <span><i style="background:var(--crit)"></i>Skipped</span>
+        </div>
+      </div>
+
+      <div class="section-t">Where to improve</div>
+      <div class="flags" id="flags"></div>
+
+      <div class="section-t">Coach says</div>
+      <div class="coach" id="coach"></div>
+
+      <div class="meta" id="meta"></div>
+
+      <div class="row mt">
+        <button class="btn accent grow" id="btnNext" type="button">Next phrase →</button>
+        <button class="btn sm" id="btnRetry" type="button">Try this again</button>
+      </div>
+    </section>
+
+    <!-- ============ PROGRESS ============ -->
+    <section class="card">
+      <div class="eyebrow" style="margin-bottom:12px">Your session</div>
+      <div class="progress">
+        <div><div class="big" id="pAttempts">0</div><div class="lil">attempts</div></div>
+        <div><div class="big" id="pAvg">–</div><div class="lil">avg confidence</div></div>
+        <div style="flex:1 1 auto; min-width:0">
+          <div class="lil" style="margin-bottom:7px">recent</div>
+          <div class="dots" id="pDots"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ COST METER ============ -->
+    <section class="card" id="costCard" hidden>
+      <div class="eyebrow" style="margin-bottom:12px">Cost per attempt · <span id="costEngine">paid tier</span></div>
+      <div class="progress">
+        <div><div class="big" id="costAttempt">$0.0000</div><div class="lil">this attempt</div></div>
+        <div><div class="big" id="costSession">$0.0000</div><div class="lil">session total</div></div>
+        <div><div class="big" id="costPerK">$0.00</div><div class="lil">per 1,000 attempts</div></div>
+      </div>
+      <div class="hint" style="margin-top:12px">Real cost from the engine you used. Azure bills by audio length (about $1.30/hour, free for the first 5 hours a month on F0). Gemini Flash-Lite bills by tokens and is usually far less. Demo shows an estimate from the clip length.</div>
+    </section>
+
+  </div>
+
+  <p class="footnote">
+    Prototype for a read-aloud English practice app. Works as a web page on any phone — no app store needed.<br>
+    Demo scoring runs in your browser. Real scoring calls your backend, which talks to Azure Pronunciation Assessment.
+  </p>
+</div>
+
+<!-- settings -->
+<dialog id="dlg">
+  <div class="dlg-body">
+    <h3>Settings</h3>
+    <p class="sub-note">Switch between the built-in demo and your live scoring backend.</p>
+
+    <div class="field">
+      <div class="switch">
+        <input type="checkbox" id="setLive">
+        <label for="setLive" style="margin:0;color:var(--ink);font-size:14px">Add AI pronunciation scoring</label>
+      </div>
+      <div class="hint">Off (default) = free on-device scoring: pace, pauses and confidence, no internet. On = also grade pronunciation with the engine below.</div>
+    </div>
+
+    <div class="field">
+      <div class="switch">
+        <input type="checkbox" id="setSound">
+        <label for="setSound" style="margin:0;color:var(--ink);font-size:14px">Play a sound with results</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="fl" for="setEngine">AI engine (when the above is on)</label>
+      <select id="setEngine">
+        <option value="azure">Azure — stable, calibrated (score.php)</option>
+        <option value="gemini">Gemini Flash-Lite — cheaper, richer (score_gemini.php)</option>
+      </select>
+      <div class="hint">Record once, then score with each engine to compare marks and cost on the same clip.</div>
+    </div>
+
+    <div class="field">
+      <label class="fl" for="setLang">Spoken language</label>
+      <select id="setLang">
+        <option value="en-US">English — US (richest feedback)</option>
+        <option value="en-IN">English — India (fairer to Indian accents)</option>
+        <option value="en-GB">English — UK</option>
+      </select>
+    </div>
+
+    <details class="dev">
+      <summary>Backend contract for developers</summary>
+      <pre id="contract"></pre>
+    </details>
+  </div>
+  <div class="dlg-actions">
+    <button class="btn sm" id="dlgReset" type="button">Reset session</button>
+    <button class="btn accent sm" id="dlgClose" type="button">Done</button>
+  </div>
+</dialog>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Schibsted+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script>
+(function(){
+  "use strict";
+  const $=(s,r=document)=>r.querySelector(s);
+
+  /* ---------------- phrase library ----------------
+     Short, complete sentences graded by difficulty.
+     In production this would load from a JSON/CSV file in S3. */
+  // Workplace phrases built around commonly-mispronounced business words.
+  const LIBRARY=[
+    {t:"Let's schedule the meeting for Monday.", lvl:"Easy"},
+    {t:"Please send me the report today.", lvl:"Easy"},
+    {t:"I will call the client this afternoon.", lvl:"Easy"},
+    {t:"Thank you for your quick response.", lvl:"Easy"},
+    {t:"Could you share the agenda before the call?", lvl:"Medium"},
+    {t:"My colleague will handle the presentation.", lvl:"Medium"},
+    {t:"We need to prioritise the urgent tasks.", lvl:"Medium"},
+    {t:"The deadline for the project is Wednesday.", lvl:"Medium"},
+    {t:"Please confirm your availability for Thursday.", lvl:"Medium"},
+    {t:"Our clientele expects punctual, professional service.", lvl:"Hard"},
+    {t:"The entrepreneur negotiated a favourable contract.", lvl:"Hard"},
+    {t:"Let's collaborate on the quarterly deliverables.", lvl:"Hard"},
+    {t:"I appreciate your thorough and prompt feedback.", lvl:"Hard"},
+    {t:"My colleague queried the miscellaneous expenses.", lvl:"Hard"}
+  ];
+  const FILLERS=["um","uh","umm","uhh","er","erm","hmm","ah","aah","anh"];
+
+  /* ---------------- settings + progress (per-viewer only) ---------------- */
+  const SKEY="phrasecoach.v1";
+  const state={ live:false, engine:"azure", lang:"en-US", sound:true, idx:0, theme:null };
+  const session={ attempts:0, scores:[], cost:0 };
+
+  function load(){
+    try{
+      const raw=localStorage.getItem(SKEY);
+      if(raw){ const o=JSON.parse(raw);
+        if(o.settings) Object.assign(state,o.settings);
+        if(o.session) Object.assign(session,o.session);
+      }
+    }catch(e){/* private mode etc. */}
+  }
+  function save(){
+    try{ localStorage.setItem(SKEY, JSON.stringify({
+      settings:{live:state.live,engine:state.engine,lang:state.lang,sound:state.sound,theme:state.theme,idx:state.idx},
+      session
+    })); }catch(e){}
+  }
+  load();
+
+  /* ---------------- theme ---------------- */
+  function applyTheme(){
+    const root=document.documentElement;
+    if(state.theme==="dark"||state.theme==="light") root.setAttribute("data-theme",state.theme);
+    else root.removeAttribute("data-theme");
+  }
+  applyTheme();
+  $("#btnTheme").onclick=()=>{
+    const dark=matchMedia("(prefers-color-scheme: dark)").matches;
+    const cur=state.theme||(dark?"dark":"light");
+    state.theme=cur==="dark"?"light":"dark";
+    applyTheme(); save();
+  };
+
+  /* ---------------- mode pill ---------------- */
+  function refreshMode(){
+    const pill=$("#modePill");
+    if(state.live){ pill.classList.add("live"); $("#modeText").textContent=state.engine==="gemini"?"AI · Gemini":"AI · Azure"; }
+    else { pill.classList.remove("live"); $("#modeText").textContent="On-device"; }
+  }
+
+  /* ---------------- phrase ---------------- */
+  let current=null;
+  function showPhrase(i){
+    state.idx=((i%LIBRARY.length)+LIBRARY.length)%LIBRARY.length;
+    current=LIBRARY[state.idx];
+    $("#phraseText").textContent=current.t;
+    $("#lvl").textContent=current.lvl; $("#lvl").dataset.lvl=current.lvl;
+    $("#phraseIdx").textContent=(state.idx+1)+" / "+LIBRARY.length;
+    resetTake();
+    $("#result").hidden=true;
+    save();
+  }
+
+  /* ---------------- TTS ---------------- */
+  $("#btnListen").onclick=()=>{
+    if(!("speechSynthesis" in window)){ toast("This browser can't read aloud."); return; }
+    try{
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(current.t);
+      u.lang=state.lang; u.rate=.92;
+      speechSynthesis.speak(u);
+    }catch(e){ toast("Could not play audio."); }
+  };
+
+  /* ---------------- recording ---------------- */
+  const btnRec=$("#btnRec"), btnStop=$("#btnStop"), btnScore=$("#btnScore"), player=$("#player");
+  const tally=$("#tally"), tallyText=$("#tallyText"), clock=$("#clock");
+  const scope=$("#scope"), c2d=scope.getContext("2d");
+  let stream=null,audioCtx=null,analyser=null,processor=null,raf=null,startedAt=0,clockTimer=null;
+  let srcRate=48000,capturing=false,pcmChunks=[],pcmLen=0;
+  let takeBlob=null,takeDur=0,takeAcoustics=null,micBlocked=false;
+  const hist=new Array(80).fill(0);
+
+  // We record 16 kHz mono WAV via Web Audio so the backend can hand it straight to
+  // Azure (which accepts WAV, but not the WebM/MP4 that MediaRecorder produces).
+  const supported=!!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+                     (window.AudioContext||window.webkitAudioContext));
+  if(!supported){ btnRec.disabled=true; tallyText.textContent="No mic support"; }
+
+  // Best-effort: is the microphone blocked by the embedding frame's permissions policy?
+  function micPolicyBlocked(){
+    try{
+      const fp=document.featurePolicy||document.permissionsPolicy;
+      if(fp && typeof fp.allowsFeature==="function") return !fp.allowsFeature("microphone");
+    }catch(e){}
+    return false; // unknown — let the actual getUserMedia call decide
+  }
+  function showMicWarning(){
+    micBlocked=true;
+    $("#micWarn").hidden=false;
+    $("#sampleRow").hidden=false;
+    btnRec.disabled=true;
+    tallyText.textContent="Mic blocked";
+  }
+  if(!supported || micPolicyBlocked()) showMicWarning();
+
+  let cssW=560,cssH=52;
+  function sizeScope(){
+    const r=scope.getBoundingClientRect(); if(!r.width) return;
+    const dpr=window.devicePixelRatio||1; cssW=r.width; cssH=52;
+    scope.width=Math.round(cssW*dpr); scope.height=Math.round(cssH*dpr);
+    scope.style.height=cssH+"px"; c2d.setTransform(dpr,0,0,dpr,0,0); paintScope();
+  }
+  function accentColor(){ return getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()||"#0f766e"; }
+  function critColor(){ return getComputedStyle(document.documentElement).getPropertyValue("--crit").trim()||"#cf4b34"; }
+  function idleColor(){ return getComputedStyle(document.documentElement).getPropertyValue("--surface-2").trim()||"#eee"; }
+  function paintScope(){
+    c2d.clearRect(0,0,cssW,cssH);
+    const n=hist.length, gap=2, bw=Math.max(1,(cssW-gap*(n-1))/n), mid=cssH/2;
+    const acc=accentColor(), cr=critColor(), idle=idleColor();
+    for(let i=0;i<n;i++){ const v=hist[i], bh=Math.max(2,v*(cssH-6));
+      c2d.fillStyle= v>0.8?cr : v>0.03?acc : idle;
+      c2d.fillRect(i*(bw+gap), mid-bh/2, bw, bh);
+    }
+  }
+  function loop(){
+    if(analyser){ const buf=new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(buf);
+      let s=0; for(let i=0;i<buf.length;i++){ const v=(buf[i]-128)/128; s+=v*v; }
+      hist.push(Math.min(1,Math.sqrt(s/buf.length)*3.4)); hist.shift();
+    }
+    paintScope(); raf=requestAnimationFrame(loop);
+  }
+  function stopAll(){
+    if(raf){ cancelAnimationFrame(raf); raf=null; }
+    if(clockTimer){ clearInterval(clockTimer); clockTimer=null; }
+    if(processor){ try{ processor.disconnect(); }catch(e){} processor.onaudioprocess=null; processor=null; }
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    if(audioCtx){ audioCtx.close().catch(()=>{}); audioCtx=null; }
+    analyser=null; capturing=false; hist.fill(0); paintScope();
+    tally.classList.remove("live"); tallyText.textContent="Ready";
+    btnRec.disabled=!supported||micBlocked; btnStop.disabled=true;
+  }
+  function resetTake(){
+    takeBlob=null; takeDur=0; takeAcoustics=null; btnScore.disabled=true;
+    if(typeof takeResults==="object") takeResults={};   // clear any A/B from the previous take
+    player.hidden=true; player.removeAttribute("src");
+    clock.textContent="0.0s"; tallyText.textContent="Ready";
+    hideScoreError();
+  }
+  function showScoreError(msg){
+    $("#scoreErrText").textContent=String(msg);
+    $("#scoreErr").hidden=false;
+    $("#scoreErr").scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+  function hideScoreError(){ $("#scoreErr").hidden=true; $("#scoreErrText").textContent=""; }
+  $("#btnCopyErr").onclick=async()=>{
+    const txt=$("#scoreErrText").textContent;
+    try{ await navigator.clipboard.writeText(txt); toast("Error copied."); }
+    catch(e){
+      const r=document.createRange(); r.selectNodeContents($("#scoreErrText"));
+      const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      toast("Selected — long-press to copy.");
+    }
+  };
+
+  // --- WAV helpers: build 16 kHz mono 16-bit PCM the backend can forward to Azure ---
+  function flattenPCM(chunks,len){ const out=new Float32Array(len); let o=0; for(const c of chunks){ out.set(c,o); o+=c.length; } return out; }
+  function downsample(buf,from,to){
+    if(to>=from) return buf;
+    const ratio=from/to, n=Math.round(buf.length/ratio), out=new Float32Array(n);
+    for(let i=0;i<n;i++){ // average a small window to soften aliasing
+      const start=Math.floor(i*ratio), end=Math.min(buf.length, Math.floor((i+1)*ratio));
+      let s=0,c=0; for(let j=start;j<end;j++){ s+=buf[j]; c++; }
+      out[i]=c?s/c:0;
+    }
+    return out;
+  }
+  function encodeWAV(samples,rate){
+    const buf=new ArrayBuffer(44+samples.length*2), view=new DataView(buf);
+    const wr=(o,s)=>{ for(let i=0;i<s.length;i++) view.setUint8(o+i,s.charCodeAt(i)); };
+    wr(0,"RIFF"); view.setUint32(4,36+samples.length*2,true); wr(8,"WAVE");
+    wr(12,"fmt "); view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true);
+    view.setUint32(24,rate,true); view.setUint32(28,rate*2,true); view.setUint16(32,2,true); view.setUint16(34,16,true);
+    wr(36,"data"); view.setUint32(40,samples.length*2,true);
+    let o=44; for(let i=0;i<samples.length;i++){ let s=Math.max(-1,Math.min(1,samples[i])); view.setInt16(o, s<0?s*0x8000:s*0x7FFF, true); o+=2; }
+    return new Blob([view],{type:"audio/wav"});
+  }
+
+  /* Measure pauses and pace straight from the waveform — more honest than Azure's
+     word timestamps, and it catches the slow start and every real gap. */
+  function analyzeAcoustics(samples, rate){
+    const winMs=20, win=Math.round(rate*winMs/1000), rms=[];
+    for(let i=0;i+win<=samples.length;i+=win){
+      let s=0; for(let j=0;j<win;j++){ const v=samples[i+j]; s+=v*v; }
+      rms.push(Math.sqrt(s/win));
+    }
+    const durationS=samples.length/rate;
+    const peak=Math.max(1e-6,...rms);
+    const thr=0.08*peak;
+    const sp=rms.map(r=>r>thr);
+    const first=sp.indexOf(true), last=sp.lastIndexOf(true);
+    if(first<0) return {durationS, leadMs:durationS*1000, speechStartMs:durationS*1000, speechEndMs:durationS*1000, pauses:[], silenceRatio:1};
+    const pauses=[]; let runStart=null, run=0;
+    for(let idx=first; idx<=last; idx++){
+      if(!sp[idx]){ if(runStart===null) runStart=idx; run++; }
+      else { if(runStart!==null && run*winMs>=PAUSE_MS) pauses.push({startMs:runStart*winMs, gapMs:run*winMs}); runStart=null; run=0; }
+    }
+    let speech=0; for(let idx=first; idx<=last; idx++) if(sp[idx]) speech++;
+    return {
+      durationS,
+      leadMs:first*winMs,
+      speechStartMs:first*winMs,
+      speechEndMs:last*winMs,
+      pauses,
+      silenceRatio: 1 - speech/Math.max(1,(last-first+1))
+    };
+  }
+  // give an acoustic pause a word label using Azure's word offsets (both timelines start at 0)
+  function labelPause(p, timed){
+    const end=p.startMs+p.gapMs; let best=null, bd=1e9;
+    for(const w of timed){ const d=w.offsetMs-end; if(w.offsetMs>=end-200 && d<bd){ bd=d; best=w; } }
+    return best ? best.word : null;
+  }
+
+  btnRec.onclick=async()=>{
+    try{
+      resetTake(); pcmChunks=[]; pcmLen=0;
+      stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true}});
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==="suspended") await audioCtx.resume();
+      srcRate=audioCtx.sampleRate;
+      const source=audioCtx.createMediaStreamSource(stream);
+      analyser=audioCtx.createAnalyser(); analyser.fftSize=1024; source.connect(analyser);
+      processor=audioCtx.createScriptProcessor(4096,1,1);
+      processor.onaudioprocess=(e)=>{ if(!capturing) return; const ch=e.inputBuffer.getChannelData(0); pcmChunks.push(new Float32Array(ch)); pcmLen+=ch.length; };
+      const zero=audioCtx.createGain(); zero.gain.value=0;   // keep processor firing without echo
+      source.connect(processor); processor.connect(zero); zero.connect(audioCtx.destination);
+      capturing=true; startedAt=Date.now();
+      tally.classList.add("live"); tallyText.textContent="Recording";
+      btnRec.disabled=true; btnStop.disabled=false; clock.textContent="0.0s";
+      clockTimer=setInterval(()=>{ clock.textContent=((Date.now()-startedAt)/1000).toFixed(1)+"s"; },100);
+      if(!raf) loop();
+    }catch(e){
+      const n=e && e.name;
+      if(n==="NotAllowedError" || n==="SecurityError"){ showMicWarning(); toast("Microphone blocked by the browser or this frame."); }
+      else if(n==="NotFoundError" || n==="OverconstrainedError"){ toast("No microphone found on this device."); }
+      else { toast("Couldn't start recording: "+(e.message||n||e)); }
+      stopAll();
+    }
+  };
+  btnStop.onclick=()=>{
+    if(!capturing){ stopAll(); return; }
+    capturing=false;
+    takeDur=(Date.now()-startedAt)/1000;
+    let ok=false;
+    try{
+      const flat=flattenPCM(pcmChunks,pcmLen);
+      const down=downsample(flat,srcRate,16000);
+      takeBlob=encodeWAV(down,16000);
+      takeAcoustics=analyzeAcoustics(down,16000);   // pauses + pace from the audio itself
+      ok=takeBlob && takeBlob.size>44;
+    }catch(e){ ok=false; }
+    stopAll();
+    if(!ok){ toast("Nothing recorded — check the microphone."); return; }
+    player.src=URL.createObjectURL(takeBlob); player.hidden=false;
+    btnScore.disabled=false; tallyText.textContent="Recorded";
+  };
+
+  /* ---------------- scoring ---------------- */
+  const WEIGHTS={ fluency:.30, flow:.30, pronunciation:.25, completeness:.15 };
+  const PAUSE_MS=400;                 // a gap longer than this counts as hesitation
+  const AZURE_RATE_PER_HOUR=1.30;     // Azure paid S0: STT + pronunciation add-on, per audio hour
+  const TARGET_WPM=120;               // a confident, natural reading pace
+
+  let takeResults={};   // {azure:{overall,cost}, gemini:{...}} for the current recording — powers A/B
+
+  function costFor(engine, raw){
+    if(raw && raw._costUsd!=null) return Number(raw._costUsd);        // real cost from the server
+    return (takeDur||0)/3600*AZURE_RATE_PER_HOUR;                     // demo estimate (Azure rate)
+  }
+
+  btnScore.onclick=async()=>{
+    if(!takeBlob){ toast("Record your reading first."); return; }
+    btnScore.disabled=true; btnScore.textContent="Scoring…"; hideScoreError();
+    try{
+      const engine = state.live ? state.engine : "local";
+      const raw = state.live ? await scoreLive(takeBlob, current.t, state.lang, engine) : null;
+      const result = normalize(raw, current.t, takeAcoustics, takeDur, state.live?"live":"local");
+      const cost = state.live ? costFor(engine, raw) : null;
+      takeResults[engine] = { overall:result.overall, cost:cost||0 };
+      renderResult(result, engine, cost);
+    }catch(e){
+      showScoreError((e && e.message) ? e.message : String(e));
+      toast("Scoring failed — see the red box.");
+    }finally{
+      btnScore.disabled=false;
+      btnScore.innerHTML='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Score my reading';
+    }
+  };
+
+  /* Live path: backend maps Azure Pronunciation Assessment -> this shape.
+     Expected JSON: { pronunciation, completeness, fluency (0..100),
+       words:[{word, errorType:"None|Mispronunciation|Omission|Insertion", accuracy:0..100, offsetMs, durationMs}] } */
+  async function scoreLive(blob, reference, lang, engine){
+    const endpoint = engine==="gemini" ? "score_gemini.php" : "score.php";
+    const fd=new FormData();
+    fd.append("audio", blob, "take."+((blob.type.split("/")[1]||"webm").split(";")[0]));
+    fd.append("reference", reference);
+    fd.append("language", lang);
+    let res;
+    try{ res=await fetch(endpoint,{method:"POST",body:fd}); }
+    catch(netErr){ throw new Error("Network error reaching "+endpoint+" — "+(netErr.message||netErr)); }
+    const txt=await res.text(); let body=null; try{ body=txt?JSON.parse(txt):null; }catch(e){}
+    if(!res.ok){
+      const detail=(body&&(body.error||body.message)) || txt.slice(0,500) || res.statusText;
+      throw new Error("HTTP "+res.status+"\n"+detail);
+    }
+    if(!body) throw new Error(endpoint+" did not return JSON. First 500 chars:\n"+txt.slice(0,500));
+    if(body.error) throw new Error(body.error);
+    if(!Array.isArray(body.words)) throw new Error("Response has no words array:\n"+txt.slice(0,500));
+    return body;   // raw Azure-shape; normalize() runs in the caller with acoustics
+  }
+
+  /* Demo path: synthesize a plausible Azure-style assessment so the UI is fully visible. */
+  async function scoreDemo(reference, dur){
+    await new Promise(r=>setTimeout(r,650));
+    const tokens=reference.replace(/[.,!?;:]/g,"").split(/\s+/).filter(Boolean);
+    const words=[]; let clock=180+Math.random()*250;
+    const nMis=Math.random()<.75?(Math.random()<.5?1:2):0;
+    const misSet=new Set(); while(misSet.size<nMis){ misSet.add(Math.floor(Math.random()*tokens.length)); }
+    const omitIdx=Math.random()<.2?Math.floor(Math.random()*tokens.length):-1;
+    tokens.forEach((w,i)=>{
+      const wl=(180+Math.random()*220);
+      if(i===omitIdx){ words.push({word:w,errorType:"Omission",accuracy:0,offsetMs:Math.round(clock),durationMs:0}); return; }
+      let acc, type="None";
+      if(misSet.has(i)){ acc=35+Math.random()*35; type="Mispronunciation"; }
+      else { acc=82+Math.random()*18; }
+      // occasional longer gap before a word -> a pause
+      if(Math.random()<.14) clock+=520+Math.random()*500;
+      words.push({word:w,errorType:type,accuracy:Math.round(acc),offsetMs:Math.round(clock),durationMs:Math.round(wl)});
+      clock+=wl+40+Math.random()*120;
+    });
+    // maybe insert a filler
+    if(Math.random()<.6){
+      const f=FILLERS[Math.floor(Math.random()*4)];
+      const at=Math.floor(Math.random()*(words.length+1));
+      words.splice(at,0,{word:f,errorType:"Insertion",accuracy:0,offsetMs:0,durationMs:250});
+    }
+    const said=words.filter(w=>w.errorType!=="Omission"&&w.errorType!=="Insertion");
+    const acc=said.length?said.reduce((s,w)=>s+w.accuracy,0)/said.length:60;
+    const completeness=Math.round(100*said.length/Math.max(1,tokens.length));
+    const fluency=Math.round(Math.max(45, 100 - (Math.random()*20) - (words.some(w=>w.errorType==="Insertion")?8:0)));
+    return {pronunciation:Math.round(acc), completeness, fluency, words};   // raw; normalize() runs in the caller
+  }
+
+  /* Turn a raw assessment (+ acoustics) into everything the UI shows, on 0..10 axes.
+     Confidence-first: flow (pace + pauses, measured from the audio) leads alongside
+     fluency, and the weaker of the two caps the top so a halting read can't score high. */
+  function normalize(raw, reference, ac, durationS, mode){
+    mode = mode || (raw ? "live" : "local");
+    const words = (raw && Array.isArray(raw.words)) ? raw.words.map(w=>({
+      word:String(w.word||""),
+      errorType:w.errorType||"None",
+      accuracy:num(w.accuracy),
+      offsetMs:num(w.offsetMs), durationMs:num(w.durationMs)
+    })) : [];
+    const fillerWords=words.filter(w=>w.errorType==="Insertion" && FILLERS.includes(w.word.toLowerCase().replace(/[^a-z]/g,"")));
+    const extraWords=words.filter(w=>w.errorType==="Insertion" && !fillerWords.includes(w));
+    const timed=words.filter(w=>w.errorType!=="Insertion" && w.offsetMs>0 && w.durationMs>0)
+                     .sort((a,b)=>a.offsetMs-b.offsetMs);
+
+    // --- pauses: prefer real acoustics, fall back to word gaps ---
+    let pauses=[], leadMs=0, spanS=null;
+    if(ac && ac.pauses){
+      pauses=ac.pauses.map(p=>({ gapMs:p.gapMs, beforeWord:labelPause(p,timed) }));
+      leadMs=ac.leadMs||0;
+      spanS=Math.max(0.3,(ac.speechEndMs-ac.speechStartMs)/1000);
+    } else {
+      for(let i=1;i<timed.length;i++){
+        const gap=timed[i].offsetMs-(timed[i-1].offsetMs+timed[i-1].durationMs);
+        if(gap>PAUSE_MS) pauses.push({gapMs:Math.round(gap), beforeWord:timed[i].word});
+      }
+      spanS=durationS||null;
+    }
+
+    // --- pace: words per minute over the spoken span ---
+    const refCount=reference.replace(/[.,!?;:]/g,"").split(/\s+/).filter(Boolean).length;
+    const wpm = spanS ? refCount/(spanS/60) : null;
+    const paceScore = wpm!=null ? clamp10((wpm-40)/(110-40)*10) : null;   // 40 wpm -> 0, 110+ -> 10
+
+    // --- pause score: each long pause costs ~1 (more when longer); slow start & fillers add ---
+    let pausePenalty=0;
+    for(const p of pauses) pausePenalty += 1 + Math.min(3,(p.gapMs-PAUSE_MS)/500);
+    if(leadMs>1500) pausePenalty += Math.min(2,(leadMs-1500)/1000);
+    pausePenalty += fillerWords.length*1.5;
+    const pauseScore=clamp10(10-pausePenalty);
+
+    const flow = paceScore!=null ? clamp10(0.5*pauseScore+0.5*paceScore) : pauseScore;
+
+    const common={ mode, reference, words, fillerWords, extraWords, pauses,
+      wpm, spanS, leadMs, pauseScore, paceScore,
+      counts:{ mis:words.filter(w=>w.errorType==="Mispronunciation").length,
+               om:words.filter(w=>w.errorType==="Omission").length } };
+
+    if(mode==="local"){
+      // no API: score only what the phone can hear — pace and pauses
+      const axes={ pace: paceScore!=null?paceScore:0, pauses: pauseScore, flow };
+      const overall = Math.round(flow*10)/10;
+      return Object.assign(common, { axes, overall, dials:[
+        {label:"Pace",           value:axes.pace},
+        {label:"Pauses & flow",  value:axes.pauses}
+      ]});
+    }
+
+    // live: add the AI pronunciation & completeness, confidence-first with the smoothness cap
+    const axes={
+      fluency:       clamp10(num(raw.fluency)/10),
+      flow:          flow,
+      pronunciation: clamp10(num(raw.pronunciation)/10),
+      completeness:  clamp10(num(raw.completeness)/10)
+    };
+    let overall = axes.fluency*WEIGHTS.fluency + axes.flow*WEIGHTS.flow
+                + axes.pronunciation*WEIGHTS.pronunciation + axes.completeness*WEIGHTS.completeness;
+    overall = Math.min(overall, Math.min(axes.fluency, axes.flow)+1.5);
+    overall = Math.round(overall*10)/10;
+    return Object.assign(common, { axes, overall, dials:[
+      {label:"Confidence — fluency", value:axes.fluency},
+      {label:"Flow — pace & pauses", value:axes.flow},
+      {label:"Pronunciation",        value:axes.pronunciation},
+      {label:"Completeness",         value:axes.completeness}
+    ]});
+  }
+  const num=v=>{ const n=typeof v==="number"?v:parseFloat(v); return isFinite(n)?n:0; };
+  const clamp10=v=>Math.max(0,Math.min(10,v));
+
+  /* ---------------- speedometer gauge ---------------- */
+  const SVGNS="http://www.w3.org/2000/svg";
+  function buildGauge(value, opts){
+    const big = !!(opts && opts.big);
+    const W=200,H=128,cx=100,cy=112,R=86,sw=big?16:13;
+    const svg=document.createElementNS(SVGNS,"svg");
+    svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.setAttribute("class","gauge");
+    svg.setAttribute("role","img");
+    const pt=(f)=>{ const th=Math.PI*(1-f); return [cx+R*Math.cos(th), cy-R*Math.sin(th)]; };
+    const arc=(f0,f1,color,width,cap)=>{
+      const [x0,y0]=pt(f0),[x1,y1]=pt(f1);
+      const p=document.createElementNS(SVGNS,"path");
+      p.setAttribute("d","M "+x0.toFixed(2)+" "+y0.toFixed(2)+" A "+R+" "+R+" 0 0 1 "+x1.toFixed(2)+" "+y1.toFixed(2));
+      p.setAttribute("fill","none"); p.style.stroke=color; p.setAttribute("stroke-width",width);
+      if(cap) p.setAttribute("stroke-linecap",cap);
+      svg.appendChild(p); return p;
+    };
+    arc(0,1,"var(--surface-2)",sw,"round");          // track
+    arc(0,0.5,"var(--crit)",sw);                     // 0-5
+    arc(0.5,0.75,"var(--warn)",sw);                  // 5-7.5
+    arc(0.75,1,"var(--good)",sw);                    // 7.5-10
+    const needle=document.createElementNS(SVGNS,"line");
+    needle.setAttribute("x1",cx); needle.setAttribute("y1",cy);
+    needle.style.stroke="var(--ink)"; needle.setAttribute("stroke-width",big?4:3); needle.setAttribute("stroke-linecap","round");
+    svg.appendChild(needle);
+    const hub=document.createElementNS(SVGNS,"circle");
+    hub.setAttribute("cx",cx); hub.setAttribute("cy",cy); hub.setAttribute("r",big?7:5); hub.style.fill="var(--ink)";
+    svg.appendChild(hub);
+    const val=document.createElementNS(SVGNS,"text");
+    val.setAttribute("x",cx); val.setAttribute("y",cy-(big?22:17)); val.setAttribute("text-anchor","middle");
+    val.setAttribute("class","gval"); val.style.fill="var(--ink)"; val.setAttribute("font-size",big?34:24);
+    svg.appendChild(val);
+    const den=document.createElementNS(SVGNS,"text");
+    den.setAttribute("x",cx); den.setAttribute("y",cy-(big?5:4)); den.setAttribute("text-anchor","middle");
+    den.setAttribute("class","gden"); den.style.fill="var(--dim)"; den.setAttribute("font-size",big?10:9);
+    den.textContent="/ 10"; svg.appendChild(den);
+
+    const target=clamp10(value), dur=900, start=performance.now();
+    const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function frame(now){
+      const t=reduce?1:Math.min(1,(now-start)/dur);
+      const e=1-Math.pow(1-t,3);                    // easeOutCubic
+      const cur=target*e, f=cur/10, th=Math.PI*(1-f);
+      needle.setAttribute("x2",(cx+R*0.80*Math.cos(th)).toFixed(2));
+      needle.setAttribute("y2",(cy-R*0.80*Math.sin(th)).toFixed(2));
+      val.textContent=cur.toFixed(1);
+      if(t<1) requestAnimationFrame(frame); else val.textContent=target.toFixed(1);
+    }
+    requestAnimationFrame(frame);
+    return svg;
+  }
+
+  /* ---------------- result sound ---------------- */
+  let sfxCtx=null;
+  function playResultSound(score){
+    if(!state.sound) return;
+    try{
+      sfxCtx = sfxCtx || new (window.AudioContext||window.webkitAudioContext)();
+      if(sfxCtx.state==="suspended") sfxCtx.resume();
+      const now=sfxCtx.currentTime, base=440;
+      const notes=[base, base*1.26, base*(score>=7?1.6:1.5)];   // brighter top note for a good score
+      notes.forEach((f,i)=>{
+        const o=sfxCtx.createOscillator(), g=sfxCtx.createGain();
+        o.type="sine"; o.frequency.value=f;
+        const t0=now+i*0.12;
+        g.gain.setValueAtTime(0.0001,t0);
+        g.gain.linearRampToValueAtTime(0.16,t0+0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001,t0+0.34);
+        o.connect(g).connect(sfxCtx.destination);
+        o.start(t0); o.stop(t0+0.4);
+      });
+    }catch(e){}
+  }
+
+  /* ---------------- render ---------------- */
+  function band(v){ return v>=7.5?"good":v>=5?"warn":"crit"; }
+  function bandColorVar(v){ return v>=7.5?"--good":v>=5?"--warn":"--crit"; }
+
+  function renderResult(r, engine, cost){
+    engine = engine || (r.mode==="live" ? "azure" : "local");
+    const localMode = (engine==="local");
+
+    // mode note
+    const note=$("#modeNote"); note.hidden=false;
+    note.innerHTML = localMode
+      ? '<b>On-device scoring.</b> Pace, pauses and confidence, measured on your phone — no internet, no cost. Turn on AI scoring in Settings to also grade pronunciation.'
+      : '<b>AI scoring (' + ({azure:"Azure",gemini:"Gemini"}[engine]||engine) + ').</b> Adds pronunciation and completeness on top of the on-device pace and pauses.';
+
+    // big overall speedometer
+    const big=$("#gaugeBig"); big.innerHTML=""; big.appendChild(buildGauge(r.overall,{big:true}));
+
+    const v=r.overall;
+    const verdicts = v>=9?["Confident","Smooth and steady — barely anything to fix."]
+      : v>=7.5?["Almost there","Mostly smooth. Iron out the marked spots."]
+      : v>=6?["Getting there","Understandable, but slow down the hesitation."]
+      : ["Keep practising","Read it as one calm, unbroken line and try again."];
+    $("#verdictH").textContent=verdicts[0]; $("#verdictP").textContent=verdicts[1];
+
+    // A/B compare row — only when live and the same recording was scored by more than one engine
+    const cmp=$("#compare"); cmp.innerHTML="";
+    const engineName={azure:"Azure",gemini:"Gemini"};
+    const scored=Object.keys(takeResults).filter(k=>k==="azure"||k==="gemini");
+    if(!localMode && scored.length>1){
+      scored.forEach(en=>{
+        const cell=document.createElement("div"); cell.className="cmp-cell"+(en===engine?" now":"");
+        const nm=document.createElement("div"); nm.className="cmp-eng"; nm.textContent=engineName[en]||en;
+        const sc=document.createElement("div"); sc.className="cmp-score"; sc.textContent=takeResults[en].overall.toFixed(1);
+        const co=document.createElement("div"); co.className="cmp-cost"; co.textContent=usd(takeResults[en].cost);
+        cell.append(nm,sc,co); cmp.appendChild(cell);
+      });
+      cmp.hidden=false;
+    } else { cmp.hidden=true; }
+
+    // individual scores as small speedometers
+    const gs=$("#gauges"); gs.innerHTML="";
+    r.dials.forEach(d=>{
+      const cell=document.createElement("div"); cell.className="gcell";
+      cell.appendChild(buildGauge(d.value,{big:false}));
+      const lab=document.createElement("div"); lab.className="glabel"; lab.textContent=d.label;
+      cell.appendChild(lab);
+      gs.appendChild(cell);
+    });
+
+    // words — only when an AI engine returned them (hidden in local mode)
+    const ws=$("#wordSection");
+    if(r.words && r.words.length){
+      ws.hidden=false;
+      const wc=$("#words"); wc.innerHTML="";
+      const mainWords=r.words.filter(w=>w.errorType!=="Insertion");
+      mainWords.forEach((w,i)=>{
+        const span=document.createElement("span");
+        const cls = w.errorType==="Mispronunciation"?"mis" : w.errorType==="Omission"?"om" : "ok";
+        span.className="w "+cls; span.textContent=w.word;
+        if(w.errorType==="Mispronunciation") span.title="Mispronounced ("+Math.round(w.accuracy)+"/100)";
+        if(w.errorType==="Omission") span.title="Skipped";
+        wc.appendChild(span);
+        if(i<mainWords.length-1) wc.appendChild(document.createTextNode(" "));
+      });
+    } else { ws.hidden=true; }
+
+    // where to improve
+    const flags=$("#flags"); flags.innerHTML="";
+    if(r.wpm!=null && r.wpm<TARGET_WPM*0.75){
+      const target=Math.max(1,Math.round((r.reference.replace(/[.,!?;:]/g,"").split(/\s+/).filter(Boolean).length)/TARGET_WPM*60));
+      addFlag(flags,"warn","Pace", "Slow — about "+Math.round(r.wpm)+" words a minute"+(r.spanS?" ("+r.spanS.toFixed(1)+"s for the line)":"")+
+        ". Aim to say it in about "+target+"s, as one run.");
+    }
+    if(r.leadMs>1500){
+      addFlag(flags,"warn","Start", (r.leadMs/1000).toFixed(1)+"s of silence before you began. Start as soon as you're ready.");
+    }
+    if(r.pauses.length){
+      const named=r.pauses.map(p=>p.beforeWord).filter(Boolean).map(w=>'"'+w+'"');
+      addFlag(flags,"warn","Pauses", r.pauses.length+" long pause"+(r.pauses.length>1?"s":"")+
+        (named.length? " (before "+named.join(", ")+")":"")+". Keep the sentence flowing.");
+    }
+    if(r.fillerWords.length){
+      addFlag(flags,"crit","Fillers", r.fillerWords.length+" filler"+(r.fillerWords.length>1?"s":"")+
+        " ("+r.fillerWords.map(w=>'"'+w.word+'"').join(", ")+"). Replace with a short silent pause.");
+    }
+    if(r.extraWords.length){
+      addFlag(flags,"crit","Extra", "Heard extra: "+r.extraWords.map(w=>'"'+w.word+'"').join(", ")+". Say each word once.");
+    }
+    if(r.counts.mis){
+      const bad=r.words.filter(w=>w.errorType==="Mispronunciation").map(w=>'"'+w.word+'"').join(", ");
+      addFlag(flags,"warn","Pronounce","Work on "+bad+".");
+    }
+    if(r.counts.om){ addFlag(flags,"crit","Skipped", r.counts.om+" word"+(r.counts.om>1?"s":"")+" not read. Read the whole sentence."); }
+    if(!flags.childElementCount){
+      addFlag(flags,"good","Smooth","Good pace, no long pauses, nothing skipped. Confident delivery.");
+    }
+
+    // coach line — target the weakest axis
+    $("#coach").textContent=coachLine(r);
+
+    // meta
+    const engLabel={azure:"Azure",gemini:"Gemini Flash-Lite",local:"on-device"}[engine]||engine;
+    const meta=$("#meta"); meta.innerHTML="";
+    [["engine",engLabel],["language",state.lang],
+     ["length",takeDur?takeDur.toFixed(1)+"s":"—"],
+     ["pace", r.wpm!=null? Math.round(r.wpm)+" wpm":"—"]]
+     .forEach(([k,val])=>{ const s=document.createElement("span"); s.textContent=k+" "+val; meta.appendChild(s); });
+
+    // cost — only when a paid AI engine ran; local mode is free, so hide the card
+    if(localMode){
+      $("#costCard").hidden=true;
+    }else{
+      const costAttempt = cost!=null ? cost : (takeDur||0)/3600*AZURE_RATE_PER_HOUR;
+      session.cost = (session.cost||0) + costAttempt;
+      renderCost(costAttempt, engine);
+    }
+
+    // progress (both modes)
+    session.attempts++; session.scores.push(r.overall);
+    if(session.scores.length>16) session.scores=session.scores.slice(-16);
+    save(); renderProgress();
+
+    $("#result").hidden=false;
+    $("#result").scrollIntoView({behavior:"smooth",block:"start"});
+    playResultSound(r.overall);
+  }
+
+  function addFlag(root,kind,key,text){
+    const el=document.createElement("div"); el.className="flag "+kind;
+    const k=document.createElement("span"); k.className="k"; k.textContent=key;
+    const t=document.createElement("span"); t.textContent=text;
+    el.append(k,t); root.appendChild(el);
+  }
+  function coachLine(r){
+    const a=r.axes;
+    const named=r.pauses.map(p=>p.beforeWord).filter(Boolean);
+    if(a.flow<7 && named.length){
+      const where=named.slice(0,2).map(w=>'"'+w+'"').join(" and ");
+      return "You paused before "+where+". Take one breath first, then say the whole sentence in a single smooth run.";
+    }
+    if(a.flow<7 && r.wpm!=null && r.wpm<TARGET_WPM*0.75){
+      return "Speak a little faster and don't stop between words. Say the whole line in one confident breath.";
+    }
+    if(a.flow<7) return "Read it as one smooth, unbroken line — confidence comes from flow, not stopping to think mid-sentence.";
+    if(a.fluency<7) return "Keep your voice steady and even. A calm, continuous delivery sounds far more confident.";
+    if(a.pronunciation<8){
+      const bad=r.words.filter(w=>w.errorType==="Mispronunciation").map(w=>'"'+w.word+'"');
+      return bad.length? "Practise "+bad.join(" and ")+" a few times, then read the whole line again."
+                       : "Sharpen the ends of your words so each one lands clearly.";
+    }
+    if(r.fillerWords.length) return "Drop the um and uh. A short silent pause sounds far more confident than a filler.";
+    return "Confident and clear. Say it twice more to make it automatic.";
+  }
+  function renderProgress(){
+    $("#pAttempts").textContent=session.attempts;
+    const avg=session.scores.length? session.scores.reduce((s,x)=>s+x,0)/session.scores.length : null;
+    $("#pAvg").textContent=avg==null?"–":avg.toFixed(1);
+    const dots=$("#pDots"); dots.innerHTML="";
+    session.scores.slice(-14).forEach(s=>{ const i=document.createElement("i"); i.className=band(s); dots.appendChild(i); });
+  }
+  function usd(n){ return "$"+ (n<0.01 ? n.toFixed(4) : n.toFixed(3)); }
+  function renderCost(attemptCost, engine){
+    if(attemptCost!=null) $("#costAttempt").textContent=usd(attemptCost);
+    $("#costSession").textContent=usd(session.cost||0);
+    const per1k = (attemptCost!=null?attemptCost:(takeDur||6)/3600*AZURE_RATE_PER_HOUR)*1000;   // this attempt × 1000
+    $("#costPerK").textContent=usd(per1k);
+    const lbl={azure:"Azure",gemini:"Gemini Flash-Lite",demo:"demo estimate"}[engine]||"paid tier";
+    $("#costEngine").textContent=lbl;
+    $("#costCard").hidden=false;
+  }
+
+  /* ---------------- misc ui ---------------- */
+  let toastTimer=null;
+  function toast(msg){
+    let t=$("#toast");
+    if(!t){ t=document.createElement("div"); t.id="toast";
+      t.style.cssText="position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);font-size:13px;padding:10px 15px;border-radius:999px;z-index:99;max-width:88vw;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.25)";
+      document.body.appendChild(t);
+    }
+    t.textContent=msg; t.style.opacity="1";
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ t.style.opacity="0"; },2600);
+  }
+
+  $("#btnSample").onclick=async()=>{
+    const b=$("#btnSample"); b.disabled=true; b.textContent="Scoring…";
+    try{
+      await new Promise(r=>setTimeout(r,400));
+      takeDur=4+Math.random()*4;
+      takeResults={};
+      // synthetic acoustics so the dials move without a microphone
+      const nP=Math.floor(Math.random()*4);
+      const fakeAc={ durationS:takeDur, leadMs:600+Math.random()*1600,
+        speechStartMs:600, speechEndMs:takeDur*1000-200,
+        pauses:Array.from({length:nP},()=>({startMs:1000, gapMs:450+Math.random()*900})),
+        silenceRatio:0.3 };
+      const result=normalize(null, current.t, fakeAc, takeDur, "local");
+      renderResult(result, "local", null);   // on-device sample
+    }catch(e){ toast("Sample scoring failed."); }
+    finally{ b.disabled=false; b.textContent="Score a sample take"; }
+  };
+
+  $("#btnSkip").onclick=()=>showPhrase(state.idx+1);
+  $("#btnNext").onclick=()=>{ showPhrase(state.idx+1); $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); };
+  $("#btnRetry").onclick=()=>{ resetTake(); $("#result").hidden=true; $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); };
+
+  /* settings dialog */
+  const dlg=$("#dlg");
+  $("#btnSettings").onclick=()=>{
+    $("#setLive").checked=state.live; $("#setEngine").value=state.engine; $("#setLang").value=state.lang; $("#setSound").checked=state.sound;
+    if(typeof dlg.showModal==="function") dlg.showModal(); else dlg.setAttribute("open","");
+  };
+  function closeDlg(){
+    state.live=$("#setLive").checked; state.engine=$("#setEngine").value; state.lang=$("#setLang").value; state.sound=$("#setSound").checked;
+    save(); refreshMode();
+    if(dlg.open && typeof dlg.close==="function") dlg.close(); else dlg.removeAttribute("open");
+  }
+  $("#dlgClose").onclick=closeDlg;
+  $("#dlgReset").onclick=()=>{ session.attempts=0; session.scores=[]; session.cost=0; save(); renderProgress(); renderCost(0); $("#costAttempt").textContent="$0.0000"; toast("Session reset."); };
+
+  $("#contract").textContent=
+`POST score.php        (same folder, multipart/form-data)
+  audio      the recording (16 kHz mono WAV — the
+             page records and encodes this for you)
+  reference  the exact phrase text shown
+  language   en-US | en-IN | en-GB
+
+Two engines return the SAME shape, chosen by the
+Settings toggle: score.php (Azure Pronunciation
+Assessment, EnableMiscue + word granularity) and
+score_gemini.php (Gemini Flash-Lite). Both add
+_engine and _costUsd. Each returns:
+
+{
+  "pronunciation": 0-100,
+  "completeness":  0-100,
+  "fluency":       0-100,
+  "words": [
+    { "word": "thought",
+      "errorType": "None|Mispronunciation|Omission|Insertion",
+      "accuracy": 0-100,
+      "offsetMs": 1240, "durationMs": 380 }
+  ]
+}
+
+This page computes the 1-10 axes, filler and
+pause detection, and the overall score from that.`;
+
+  /* ---------------- boot ---------------- */
+  window.addEventListener("resize", sizeScope);
+  window.addEventListener("beforeunload", ()=>{ if(stream) stream.getTracks().forEach(t=>t.stop()); });
+  refreshMode(); renderProgress(); sizeScope(); showPhrase(state.idx||0);
+})();
+</script>
+
+</body>
+</html>

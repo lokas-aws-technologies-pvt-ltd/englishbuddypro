@@ -1,0 +1,16 @@
+# Phrase Coach — GoDaddy (Apache)
+#
+# Routing is no longer needed: the page posts directly to score.php.
+# This file's only job now is to stop anyone downloading the key file.
+# (config.php only sets variables and echoes nothing, so a direct request
+#  already returns blank — this is just belt-and-braces.)
+
+<Files "config.php">
+    Require all denied
+</Files>
+
+# Older Apache 2.2 hosts: use this block instead of the one above.
+#   <Files "config.php">
+#     Order allow,deny
+#     Deny from all
+#   </Files>
