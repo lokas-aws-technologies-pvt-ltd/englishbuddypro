@@ -28,3 +28,15 @@ Azure + Gemini keys. This file is git-ignored, so pulls never touch it.
 ## Each update
 Claude pushes a new version to GitHub. In cPanel: open the repo >
 **Update from Remote** (pull) > **Deploy HEAD Commit** (if using .cpanel.yml). Done.
+
+## Indian voice audio (one-time)
+The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
+words and the Listen button, falling back to the browser voice if a clip is missing.
+
+To create the clips:
+1. In `config.php` add: `$GEN_SECRET = 'a-long-random-string';`
+2. Deploy, then open once in a browser:
+   `https://training.igiver.org/englishbuddypro/generate_audio.php?key=a-long-random-string`
+3. It writes `audio/phrases/*.mp3` and `audio/words/*.mp3` using your Azure key
+   (a few thousand characters — free tier). When it reports errors=0, you're done.
+4. Delete `generate_audio.php` or leave it behind the secret.

@@ -757,10 +757,24 @@
     });
   }
   let wcCurrent="";
-  function speakWord(w){
+  // Play a pre-generated Indian-voice MP3 if present; fall back to the browser voice.
+  const slug=w=>w.toLowerCase().replace(/[^a-z0-9]+/g,"");
+  let curAudio=null;
+  function ttsSpeak(text,rate){
     if(!("speechSynthesis" in window)) return;
-    try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(w); u.lang=state.lang; u.rate=.8; speechSynthesis.speak(u); }catch(e){}
+    try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang=state.lang; u.rate=rate; speechSynthesis.speak(u); }catch(e){}
   }
+  function playClip(url, fallback){
+    try{ if(curAudio) curAudio.pause(); }catch(e){}
+    let done=false; const fb=()=>{ if(done) return; done=true; fallback(); };
+    try{
+      const a=new Audio(url); curAudio=a;
+      a.addEventListener("error", fb, {once:true});
+      const p=a.play();
+      if(p && p.catch) p.catch(fb);
+    }catch(e){ fb(); }
+  }
+  function speakWord(w){ playClip("audio/words/"+slug(w)+".mp3", ()=>ttsSpeak(w,.8)); }
   $("#phraseText").addEventListener("click",e=>{
     const b=e.target.closest(".hardword"); if(!b) return;
     wcCurrent=b.dataset.w;
@@ -773,13 +787,8 @@
 
   /* ---------------- TTS ---------------- */
   $("#btnListen").onclick=()=>{
-    if(!("speechSynthesis" in window)){ toast("This browser can't read aloud."); return; }
-    try{
-      speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(current.t);
-      u.lang=state.lang; u.rate=.92;
-      speechSynthesis.speak(u);
-    }catch(e){ toast("Could not play audio."); }
+    const n=String(state.idx+1).padStart(2,"0");
+    playClip("audio/phrases/p"+n+".mp3", ()=>ttsSpeak(current.t,.92));
   };
 
   /* ---------------- recording ---------------- */

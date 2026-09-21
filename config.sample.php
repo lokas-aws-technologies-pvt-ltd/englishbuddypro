@@ -13,3 +13,6 @@ $AZURE_REGION = 'centralindia';   // e.g. centralindia, eastus, southeastasia
 // Google AI Studio -> https://aistudio.google.com/apikey
 $GEMINI_KEY   = 'PASTE_YOUR_GEMINI_API_KEY_HERE';
 // $GEMINI_MODEL = 'gemini-3.5-flash-lite';  // uncomment to override the default
+
+// Audio generator (generate_audio.php) — set to a long random string.
+$GEN_SECRET = 'change-me-to-a-long-random-string';
