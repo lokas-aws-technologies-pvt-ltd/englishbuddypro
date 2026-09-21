@@ -5,7 +5,7 @@ deployment:
     # Find it in cPanel > Domains (subdomain document root). Common guesses:
     #   /home/vna10l90oed1/training.igiver.org/englishbuddypro/
     #   /home/vna10l90oed1/public_html/englishbuddypro/
-    - export DEPLOYPATH=/home/vna10l90oed1/public_html/englishbuddypro/
+    - export DEPLOYPATH=/home/vna10l90oed1/public_html/training.igiver.org/englishbuddypro
     - /bin/mkdir -p $DEPLOYPATH
     # Copy only the app files. config.php is NOT copied, so your live keys stay untouched.
     - /bin/cp -f index.html $DEPLOYPATH
