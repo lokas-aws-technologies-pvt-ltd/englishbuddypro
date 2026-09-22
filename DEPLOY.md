@@ -47,6 +47,19 @@ the app simply doesn't log (practice and scoring still work).
 4. Students sign in once (class code + roll number) in the app; a "Change"
    button in Settings lets them switch. No passwords are stored.
 
+## Teacher dashboard (teacher.php)
+A read-only page showing class progress: confidence trend, practice volume, a
+student roster with streaks and score sparklines, the most-missed "focus words",
+and the toughest phrases. It reads the same MySQL data that `log.php` writes.
+
+1. Set the MySQL credentials above (the dashboard needs them).
+2. In `config.php` set `$TEACHER_KEY` to a long, private passcode.
+3. Open `https://training.igiver.org/englishbuddypro/teacher.php`, enter the
+   passcode once (it's held in a session cookie, never in the URL). Use **Sign out**
+   to end the session; **Refresh** reloads the latest numbers.
+
+Only you should know the passcode — anyone with it can see the class data.
+
 ## Indian voice audio (one-time)
 The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
 words and the Listen button, falling back to the browser voice if a clip is missing.

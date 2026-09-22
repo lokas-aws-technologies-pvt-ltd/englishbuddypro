@@ -26,3 +26,8 @@ $DB_HOST = 'localhost';
 $DB_NAME = '';   // e.g. vna10l90oed1_englishbuddy
 $DB_USER = '';   // e.g. vna10l90oed1_ebuser
 $DB_PASS = '';   // the database user's password
+
+// --- Teacher dashboard (teacher.php) ---
+// The passcode you type to open the dashboard. Treat it like a password;
+// keep it long and private. Leave empty and the dashboard stays locked.
+$TEACHER_KEY = 'change-me-to-a-teacher-passcode';
