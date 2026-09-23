@@ -60,6 +60,21 @@ and the toughest phrases. It reads the same MySQL data that `log.php` writes.
 
 Only you should know the passcode — anyone with it can see the class data.
 
+## Scratch-card rewards (rewards.php)
+Students earn points for practising and bigger points for improving, and unlock
+scratch cards with in-app rewards (badges, colour themes, a title). It uses the
+same MySQL database - no extra setup; the `rewards` table creates itself.
+
+- Points: each try earns its score (best 2 tries per sentence per day count, max
+  30 tries a day). Beating your own best earns 10 per point gained; scoring 8+
+  on a sentence on 2 different days masters it (+20).
+- Cards unlock at 100, 250, 450, 700, 1000 points, then every +350 - only after
+  practising on 2 different days AND improving (3 new personal bests, or a
+  mastered sentence, or a higher recent average) since the last card.
+- The app always shows the next reward and the next step toward it.
+- Tune the numbers at the top of `rewards.php` once you have a few weeks of data.
+- Settings > "Preview a scratch card" shows the effect without saving anything.
+
 ## Indian voice audio (one-time)
 The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
 words and the Listen button, falling back to the browser voice if a clip is missing.

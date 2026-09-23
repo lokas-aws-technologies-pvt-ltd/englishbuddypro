@@ -57,4 +57,15 @@ function pc_ensure_schema($pdo){
     created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_student_time (student_id, created_at)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+  // scratch cards: one row per unlocked card; scratched_at set when revealed
+  $pdo->exec("CREATE TABLE IF NOT EXISTS rewards (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id   INT NOT NULL,
+    card_no      INT NOT NULL,
+    reward_key   VARCHAR(20) NOT NULL,
+    unlocked_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    scratched_at DATETIME NULL,
+    UNIQUE KEY uniq_card (student_id, card_no)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }

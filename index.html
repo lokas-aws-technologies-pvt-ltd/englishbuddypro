@@ -369,6 +369,63 @@
 
   .footnote{ font-size:11.5px; color:var(--dim); text-align:center; margin-top:22px; line-height:1.6; }
   .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+  /* ---------- rewards ---------- */
+  #rewardsCard[hidden]{ display:none !important; }
+  .rw-pts{ font-family:var(--mono); font-size:11px; color:var(--ink); letter-spacing:.04em; text-transform:none; }
+  .rw-next{ display:flex; align-items:center; gap:12px; margin:12px 0 12px; }
+  .rw-icon{ flex:none; width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    font-size:24px; background:var(--accent-soft); border:1px solid var(--line); }
+  .rw-lil{ font-size:12px; color:var(--muted); }
+  .rw-name{ font-family:var(--display); font-weight:600; font-size:17px; line-height:1.25; }
+  .rw-bar{ height:10px; border-radius:6px; background:var(--surface-2); overflow:hidden; }
+  .rw-bar > i{ display:block; height:100%; width:0; border-radius:6px; background:var(--accent); transition:width .6s cubic-bezier(.2,.7,.2,1); }
+  .rw-barlab{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:6px; font-variant-numeric:tabular-nums; }
+  .rw-checks{ list-style:none; margin:14px 0 0; padding:0; display:grid; gap:7px; }
+  .rw-checks li{ display:flex; gap:9px; align-items:flex-start; font-size:13.5px; color:var(--muted); }
+  .rw-checks li b{ font-weight:500; color:var(--ink); }
+  .rw-checks .ck{ flex:none; width:18px; height:18px; border-radius:50%; border:1.5px solid var(--line); margin-top:1px;
+    display:inline-flex; align-items:center; justify-content:center; font-size:11px; line-height:1; color:transparent; }
+  .rw-checks li.done .ck{ background:var(--good); border-color:var(--good); color:#fff; }
+  .rw-hint{ margin-top:14px; border-left:3px solid var(--accent); padding:4px 0 4px 12px; font-size:14px; line-height:1.5; }
+  .rw-hint .hq{ font-family:var(--display); display:block; margin-top:3px; color:var(--ink); }
+  .rw-hint .btn{ margin-top:9px; }
+  .rw-shelf{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+  .rw-shelf:empty{ display:none; }
+  .rw-chip{ font-size:12px; padding:4px 10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink); white-space:nowrap; }
+  .rw-gift{ width:100%; margin-top:12px; justify-content:center; }
+  .rw-gift[hidden]{ display:none !important; }
+  .gain{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+  .gain[hidden]{ display:none !important; }
+  .gain span{ font-family:var(--mono); font-size:12px; padding:4px 9px; border-radius:999px; background:var(--accent-soft); color:var(--ink); }
+  .gain span.pb{ background:var(--good-soft); }
+  .gain span.zero{ background:var(--surface-2); color:var(--muted); font-family:var(--ui); }
+
+  /* scratch card */
+  .scratch{ position:relative; width:100%; max-width:320px; height:180px; margin:4px auto 0; border-radius:14px; overflow:hidden;
+    border:1px solid var(--line); background:var(--accent-soft); user-select:none; -webkit-user-select:none; }
+  .scratch-prize{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:14px; gap:4px; }
+  .sp-icon{ font-size:46px; line-height:1; }
+  .sp-name{ font-family:var(--display); font-weight:600; font-size:19px; line-height:1.25; }
+  .sp-desc{ font-size:13px; color:var(--muted); }
+  #scCanvas{ position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:grab; transition:opacity .45s ease; }
+  .confetti{ position:fixed; top:-12px; width:8px; height:12px; border-radius:2px; z-index:120; pointer-events:none;
+    animation:fall 1.5s cubic-bezier(.25,.6,.4,1) forwards; }
+  @keyframes fall{ to{ transform:translate(var(--dx),105vh) rotate(var(--rot)); opacity:.9; } }
+  @media (prefers-reduced-motion: reduce){ .confetti{ display:none; } .rw-bar > i{ transition:none; } }
+
+  /* colour themes unlocked by scratch cards (jade is the default) */
+  :root[data-accent="saffron"]{ --accent:#b45309; --accent-soft:#f5e6d3; }
+  :root[data-accent="ocean"]  { --accent:#1d4ed8; --accent-soft:#dce5fb; }
+  :root[data-accent="rose"]   { --accent:#be185d; --accent-soft:#f7dbe7; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"])[data-accent="saffron"]{ --accent:#f2a950; --accent-soft:#3a2912; --accent-ink:#231300; }
+    :root:not([data-theme="light"])[data-accent="ocean"]  { --accent:#86a8ff; --accent-soft:#17233f; --accent-ink:#0a1633; }
+    :root:not([data-theme="light"])[data-accent="rose"]   { --accent:#f58bb8; --accent-soft:#3b1628; --accent-ink:#2a0716; }
+  }
+  :root[data-theme="dark"][data-accent="saffron"]{ --accent:#f2a950; --accent-soft:#3a2912; --accent-ink:#231300; }
+  :root[data-theme="dark"][data-accent="ocean"]  { --accent:#86a8ff; --accent-soft:#17233f; --accent-ink:#0a1633; }
+  :root[data-theme="dark"][data-accent="rose"]   { --accent:#f58bb8; --accent-soft:#3b1628; --accent-ink:#2a0716; }
 </style>
 </head>
 <body>
@@ -497,12 +554,33 @@
       <div class="section-t">Coach says</div>
       <div class="coach" id="coach"></div>
 
+      <div class="gain" id="gainLine" hidden></div>
+      <button class="btn accent rw-gift" id="btnResultGift" type="button" hidden>&#127873; New scratch card! Tap to scratch</button>
+
       <div class="meta" id="meta"></div>
 
       <div class="row mt">
         <button class="btn accent grow" id="btnNext" type="button">Next phrase →</button>
         <button class="btn sm" id="btnRetry" type="button">Try this again</button>
       </div>
+    </section>
+
+    <!-- ============ REWARDS ============ -->
+    <section class="card" id="rewardsCard" hidden aria-live="polite">
+      <div class="eyebrow"><span>Rewards</span><span class="rw-pts" id="rwPoints">0 points</span></div>
+      <button class="btn accent rw-gift" id="rwGift" type="button" hidden>&#127873; You have a scratch card! Tap to scratch</button>
+      <div class="rw-next">
+        <div class="rw-icon" id="rwNextIcon" aria-hidden="true">&#127873;</div>
+        <div style="min-width:0">
+          <div class="rw-lil">Next scratch card <span id="rwNextNo"></span></div>
+          <div class="rw-name" id="rwNextName">&nbsp;</div>
+        </div>
+      </div>
+      <div class="rw-bar" role="progressbar" aria-label="Points toward the next card" id="rwBar" aria-valuemin="0" aria-valuemax="100"><i id="rwBarFill"></i></div>
+      <div class="rw-barlab"><span id="rwBarLab"></span><span id="rwBarNeed"></span></div>
+      <ul class="rw-checks" id="rwChecks"></ul>
+      <div class="rw-hint" id="rwHint"></div>
+      <div class="rw-shelf" id="rwShelf"></div>
     </section>
 
     <!-- ============ PROGRESS ============ -->
@@ -584,6 +662,17 @@
       </div>
     </div>
 
+    <div class="field">
+      <label class="fl" for="setAccent">Colour</label>
+      <select id="setAccent"><option value="jade">Jade (default)</option></select>
+      <div class="hint" id="accentHint">Unlock more colours with scratch cards.</div>
+    </div>
+
+    <div class="field">
+      <button class="btn sm" id="btnPreviewCard" type="button">&#127873; Preview a scratch card</button>
+      <div class="hint">Try the scratch effect. Preview only &mdash; nothing is saved or unlocked.</div>
+    </div>
+
     <details class="dev">
       <summary>Backend contract for developers</summary>
       <pre id="contract"></pre>
@@ -615,6 +704,26 @@
   </div>
   <div class="dlg-actions">
     <button class="btn accent sm" id="idSave" type="button">Save</button>
+  </div>
+</dialog>
+
+<dialog id="scratchDlg">
+  <div class="dlg-body">
+    <h3 id="scTitle">Scratch card</h3>
+    <p class="sub-note" id="scSub">Rub the silver with your finger to reveal your reward.</p>
+    <div class="scratch" id="scBox">
+      <div class="scratch-prize" id="scPrize">
+        <div class="sp-icon" id="scIcon"></div>
+        <div class="sp-name" id="scName"></div>
+        <div class="sp-desc" id="scDesc"></div>
+      </div>
+      <canvas id="scCanvas" aria-label="Scratch area. Use Reveal all if you can't scratch."></canvas>
+    </div>
+    <div class="hint" id="scNote" style="text-align:center;margin-top:10px"></div>
+  </div>
+  <div class="dlg-actions">
+    <button class="btn sm ghost" id="scRevealAll" type="button">Reveal all</button>
+    <button class="btn accent sm" id="scDone" type="button">Done</button>
   </div>
 </dialog>
 
@@ -714,7 +823,7 @@
 
   /* ---------------- settings + progress (per-viewer only) ---------------- */
   const SKEY="phrasecoach.v1";
-  const state={ live:false, engine:"azure", lang:"en-US", sound:true, idx:0, theme:null, student:{code:"",roll:"",name:""} };
+  const state={ live:false, engine:"azure", lang:"en-US", sound:true, idx:0, theme:null, student:{code:"",roll:"",name:""}, accent:"jade" };
   const session={ attempts:0, scores:[], cost:0 };
 
   function load(){
@@ -728,7 +837,7 @@
   }
   function save(){
     try{ localStorage.setItem(SKEY, JSON.stringify({
-      settings:{live:state.live,engine:state.engine,lang:state.lang,sound:state.sound,theme:state.theme,idx:state.idx,student:state.student},
+      settings:{live:state.live,engine:state.engine,lang:state.lang,sound:state.sound,theme:state.theme,idx:state.idx,student:state.student,accent:state.accent},
       session
     })); }catch(e){}
   }
@@ -1033,7 +1142,7 @@
      stay silent and never block the student's practice. */
   function logAttempt(r, engine){
     const stu=state.student||{};
-    if(!stu.code || !stu.roll) return;                 // not signed in yet -> skip quietly
+    if(!stu.code || !stu.roll) return null;            // not signed in yet -> skip quietly
     const ax=r.axes||{};
     const val=v=>(typeof v==="number" && isFinite(v)) ? v : null;   // null (not 0) for absent axes
     const longest = (r.pauses && r.pauses.length) ? Math.max.apply(null, r.pauses.map(p=>p.gapMs||0)) : 0;
@@ -1057,9 +1166,9 @@
       lang: state.lang
     };
     try{
-      fetch("log.php",{ method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(payload), keepalive:true }).catch(()=>{});
-    }catch(e){/* offline / blocked -> ignore */}
+      return fetch("log.php",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload), keepalive:true }).then(r=>r.ok).catch(()=>false);
+    }catch(e){ return Promise.resolve(false); }   /* offline / blocked -> ignore */
   }
 
   btnScore.onclick=async()=>{
@@ -1072,7 +1181,8 @@
       const cost = state.live ? costFor(engine, raw) : null;
       takeResults[engine] = { overall:result.overall, cost:cost||0 };
       renderResult(result, engine, cost);
-      logAttempt(result, engine);            // Phase 1: record for teacher progress (quiet, non-blocking)
+      const logged = logAttempt(result, engine);   // record for teacher progress (quiet, non-blocking)
+      if(logged) logged.then(ok=>{ if(ok) refreshRewards(true); });   // then show points earned / new card
     }catch(e){
       showScoreError((e && e.message) ? e.message : String(e));
       toast("Scoring failed — see the red box.");
@@ -1296,6 +1406,7 @@
   function bandColorVar(v){ return v>=7.5?"--good":v>=5?"--warn":"--crit"; }
 
   function renderResult(r, engine, cost){
+    $("#gainLine").hidden=true; $("#btnResultGift").hidden=true;
     engine = engine || (r.mode==="live" ? "azure" : "local");
     const localMode = (engine==="local");
 
@@ -1500,15 +1611,251 @@
   const dlg=$("#dlg");
   $("#btnSettings").onclick=()=>{
     $("#setLive").checked=state.live; $("#setEngine").value=state.engine; $("#setLang").value=state.lang; $("#setSound").checked=state.sound;
+    syncAccentOptions();
     if(typeof dlg.showModal==="function") dlg.showModal(); else dlg.setAttribute("open","");
   };
   function closeDlg(){
     state.live=$("#setLive").checked; state.engine=$("#setEngine").value; state.lang=$("#setLang").value; state.sound=$("#setSound").checked;
+    state.accent=$("#setAccent").value||"jade"; applyAccent();
     save(); refreshMode();
     if(dlg.open && typeof dlg.close==="function") dlg.close(); else dlg.removeAttribute("open");
   }
   $("#dlgClose").onclick=closeDlg;
   $("#dlgReset").onclick=()=>{ session.attempts=0; session.scores=[]; session.cost=0; save(); renderProgress(); renderCost(0); $("#costAttempt").textContent="$0.0000"; toast("Session reset."); };
+
+  /* ---------------- rewards: scratch cards ----------------
+     Points and card unlocks are decided by rewards.php from the logged attempts,
+     so they can't be changed on the phone. This block only shows them. */
+  const ACCENTS={ jade:"Jade (default)", saffron:"Saffron", ocean:"Ocean", rose:"Rose" };
+  function applyAccent(){
+    const a=state.accent||"jade";
+    if(a==="jade") document.documentElement.removeAttribute("data-accent");
+    else document.documentElement.setAttribute("data-accent",a);
+  }
+  applyAccent();
+
+  let rw=null;   // latest status from rewards.php
+  const phraseText=i=>{ const p=LIBRARY[i-1]; return p? p.t : ""; };
+
+  async function rewardsCall(body){
+    const stu=state.student||{};
+    const res=await fetch("rewards.php",{ method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(Object.assign({class_code:stu.code, roll_no:stu.roll}, body)) });
+    if(!res.ok) throw new Error("rewards "+res.status);
+    const d=await res.json();
+    if(!d || !d.ok) throw new Error("rewards");
+    return d;
+  }
+  async function refreshRewards(afterAttempt){
+    const stu=state.student||{};
+    if(!stu.code || !stu.roll){ rw=null; $("#rewardsCard").hidden=true; return; }
+    const before=rw;
+    try{ rw=await rewardsCall({action:"status"}); }
+    catch(e){ rw=null; $("#rewardsCard").hidden=true; return; }   // no backend / DB: just hide rewards
+    renderRewards(); syncAccentOptions();
+    if(afterAttempt) showGain(before);
+  }
+
+  function renderRewards(){
+    const card=$("#rewardsCard");
+    if(!rw){ card.hidden=true; return; }
+    card.hidden=false;
+    const n=rw.next;
+    $("#rwPoints").textContent=rw.points.toLocaleString()+" points";
+    $("#rwGift").hidden=!rw.pending;
+    $("#rwNextIcon").textContent=n.reward.icon;
+    $("#rwNextNo").textContent="#"+n.no;
+    $("#rwNextName").textContent=n.reward.name;
+
+    const span=Math.max(1,n.threshold-n.from), got=Math.min(span,Math.max(0,rw.points-n.from));
+    const pct=Math.round(got/span*100);
+    $("#rwBarFill").style.width=pct+"%"; $("#rwBar").setAttribute("aria-valuenow",pct);
+    $("#rwBarLab").textContent=rw.points+" / "+n.threshold+" points";
+    $("#rwBarNeed").textContent=n.need>0? n.need+" to go" : "points reached ✓";
+
+    // everything the next card needs, ticked off as it's met
+    const since = n.no>1 ? " since your last card" : "";
+    const ul=$("#rwChecks"); ul.innerHTML="";
+    const item=(done,html)=>{ const li=document.createElement("li"); if(done) li.className="done";
+      li.innerHTML='<span class="ck" aria-hidden="true">✓</span><span>'+html+(done?' <span class="sr-only">(done)</span>':'')+'</span>'; ul.appendChild(li); };
+    item(n.points_ok, "<b>Reach "+n.threshold+" points</b>");
+    item(n.days_ok, "<b>Practise on "+n.days_need+" different days</b>"+since+" ("+Math.min(n.days,n.days_need)+"/"+n.days_need+")");
+    item(n.improve_ok, "<b>Show improvement</b>"+since+": beat your best on "+n.pbs_need+" sentences ("+Math.min(n.pbs,n.pbs_need)+"/"+n.pbs_need+"), or master a sentence");
+
+    renderHint();
+
+    // earned rewards shelf
+    const sh=$("#rwShelf"); sh.innerHTML="";
+    const chip=t=>{ const c=document.createElement("span"); c.className="rw-chip"; c.textContent=t; sh.appendChild(c); };
+    if(rw.unlocks.title) chip("💼 "+rw.unlocks.title);
+    rw.unlocks.badges.forEach(b=>chip(b.icon+" "+b.name));
+    rw.unlocks.themes.forEach(k=>chip("🎨 "+(ACCENTS[k]||k)));
+    if(rw.unlocks.stars) chip("⭐ Gold Star ×"+rw.unlocks.stars);
+  }
+
+  // the single most useful next step, with a button to jump straight to it
+  function renderHint(){
+    const h=rw.hint||{}, el=$("#rwHint"); el.innerHTML="";
+    const say=t=>{ const s=document.createElement("span"); s.textContent=t; el.appendChild(s); };
+    const quote=i=>{ const q=document.createElement("span"); q.className="hq"; q.textContent="“"+phraseText(i)+"”"; el.appendChild(q); };
+    const go=i=>{ const b=document.createElement("button"); b.type="button"; b.className="btn sm"; b.textContent="Practise this sentence →";
+      b.onclick=()=>{ showPhrase(i-1); $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); }; el.appendChild(b); };
+    switch(h.kind){
+      case "scratch": say("Your scratch card is ready — tap the button above to scratch it!"); break;
+      case "start":   say("Next step: score your first sentence to start earning points."); break;
+      case "pb":
+        if(h.phrase_idx){
+          say("Next step: beat your best score on "+h.need+" more sentence"+(h.need>1?"s":"")+". Try this one again — your best is "+Number(h.best).toFixed(1)+":");
+          quote(h.phrase_idx); go(h.phrase_idx);
+        } else say("Next step: read a sentence, then read it again and beat your score.");
+        break;
+      case "master":
+        say(h.today ? "Next step: come back tomorrow and score 8+ again on this sentence to master it:"
+                    : "Next step: score 8+ again on this sentence to master it:");
+        quote(h.phrase_idx); if(!h.today) go(h.phrase_idx);
+        break;
+      case "points":  say("Next step: earn "+h.need+" more points — about "+h.sentences+" more sentence"+(h.sentences>1?"s":"")+" at your level. New sentences and beating your best earn the most."); break;
+      case "days":    say("Great work today! Come back tomorrow — each card needs practice on "+h.need+" different days."); break;
+      default:        say("Almost there — keep practising!");
+    }
+  }
+
+  // "+6 practice · +14 personal best!" under the result, and a new-card alert
+  function showGain(before){
+    const g=$("#gainLine"); g.innerHTML=""; g.hidden=true;
+    const L=rw && rw.last;
+    if(!L || (before && before.last && before.last.attempt_id===L.attempt_id)) return;   // this take wasn't logged
+    const chip=(t,cls)=>{ const s=document.createElement("span"); if(cls) s.className=cls; s.textContent=t; g.appendChild(s); };
+    if(L.practice>0) chip("+"+L.practice+" practice");
+    if(L.pb_points>0) chip("+"+L.pb_points+" personal best!","pb");
+    if(L.mastery_points>0) chip("+"+L.mastery_points+" sentence mastered! 🏆","pb");
+    const total=L.practice+L.pb_points+L.mastery_points;
+    if(total<=0) chip("No new points — only your best 2 tries of each sentence count per day. Try another sentence!","zero");
+    g.hidden=false;
+    if(rw.pending && (!before || before.pending!==rw.pending)){
+      $("#btnResultGift").hidden=false;
+      toast("🎁 You unlocked a scratch card!");
+      playFanfare();
+    } else if(total>0) toast("+"+total+" points");
+  }
+
+  function syncAccentOptions(){
+    const sel=$("#setAccent");
+    let have=["jade"].concat(rw ? rw.unlocks.themes : []);
+    if(rw && !have.includes(state.accent||"jade")){ state.accent="jade"; save(); applyAccent(); }   // not unlocked for this student
+    if(!rw && state.accent && !have.includes(state.accent)) have.push(state.accent);                 // offline: keep current
+    sel.innerHTML="";
+    have.forEach(k=>{ const o=document.createElement("option"); o.value=k; o.textContent=ACCENTS[k]||k; sel.appendChild(o); });
+    sel.value=state.accent||"jade";
+    $("#accentHint").textContent = have.length>1 ? "Colours you unlocked with scratch cards." : "Unlock more colours with scratch cards.";
+  }
+
+  function playFanfare(){
+    if(!state.sound) return;
+    try{
+      sfxCtx = sfxCtx || new (window.AudioContext||window.webkitAudioContext)();
+      if(sfxCtx.state==="suspended") sfxCtx.resume();
+      const now=sfxCtx.currentTime;
+      [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+        const o=sfxCtx.createOscillator(), g=sfxCtx.createGain();
+        o.type="triangle"; o.frequency.value=f;
+        const t0=now+i*0.09, len=i===3?0.6:0.22;
+        g.gain.setValueAtTime(0.0001,t0); g.gain.linearRampToValueAtTime(0.14,t0+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,t0+len);
+        o.connect(g).connect(sfxCtx.destination); o.start(t0); o.stop(t0+len+0.05);
+      });
+    }catch(e){}
+  }
+  function confetti(host){
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const cs=getComputedStyle(document.documentElement);
+    const cols=["--accent","--good","--warn","--crit"].map(v=>cs.getPropertyValue(v).trim()||"#0f766e");
+    for(let i=0;i<46;i++){
+      const c=document.createElement("i"); c.className="confetti";
+      c.style.left=(Math.random()*100)+"vw"; c.style.background=cols[i%cols.length];
+      c.style.setProperty("--dx",(Math.random()*120-60)+"px");
+      c.style.setProperty("--rot",(Math.random()*720-360)+"deg");
+      c.style.animationDelay=(Math.random()*0.35)+"s";
+      host.appendChild(c); setTimeout(()=>c.remove(),2200);
+    }
+  }
+
+  /* the scratch card: a foil canvas over the prize; finger strokes erase it */
+  const scDlg=$("#scratchDlg"), scCv=$("#scCanvas");
+  let sc=null;
+  function openScratch(cardNo, preview){
+    let reward;
+    if(preview) reward={ icon:"🎨", name:"Saffron colour theme", desc:"Preview only — nothing is unlocked." };
+    else { reward=((rw&&rw.cards)||[]).find(c=>c.no===cardNo); if(!reward) return; }
+    sc={ cardNo, preview:!!preview, done:false, down:false, last:null, strokes:0 };
+    $("#scTitle").textContent = preview ? "Scratch card preview" : "Scratch card #"+cardNo;
+    $("#scIcon").textContent=reward.icon; $("#scName").textContent=reward.name; $("#scDesc").textContent=reward.desc;
+    $("#scPrize").style.visibility="hidden";          // hidden until the foil is painted
+    $("#scNote").textContent=""; $("#scRevealAll").hidden=false;
+    scCv.style.display="block"; scCv.style.opacity="1";
+    if(typeof scDlg.showModal==="function") scDlg.showModal(); else scDlg.setAttribute("open","");
+    requestAnimationFrame(paintFoil);
+  }
+  function paintFoil(){
+    const box=$("#scBox").getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    scCv.width=Math.round(box.width*dpr); scCv.height=Math.round(box.height*dpr);
+    const x=scCv.getContext("2d");
+    x.setTransform(dpr,0,0,dpr,0,0); x.globalCompositeOperation="source-over";
+    const g=x.createLinearGradient(0,0,box.width,box.height);
+    g.addColorStop(0,"#aeb7b5"); g.addColorStop(.45,"#e4e9e7"); g.addColorStop(.55,"#cfd6d4"); g.addColorStop(1,"#9ea8a6");
+    x.fillStyle=g; x.fillRect(0,0,box.width,box.height);
+    x.fillStyle="rgba(255,255,255,.4)";
+    for(let i=0;i<70;i++){ x.beginPath(); x.arc(Math.random()*box.width,Math.random()*box.height,Math.random()*1.6+.4,0,Math.PI*2); x.fill(); }
+    x.fillStyle="#56615f"; x.textAlign="center"; x.textBaseline="middle";
+    x.font="600 15px "+getComputedStyle(document.body).fontFamily;
+    x.fillText("✦  SCRATCH HERE  ✦", box.width/2, box.height/2);
+    $("#scPrize").style.visibility="visible";
+  }
+  function scPoint(e){ const r=scCv.getBoundingClientRect(); return { x:e.clientX-r.left, y:e.clientY-r.top }; }
+  function clearedRatio(){
+    const d=scCv.getContext("2d").getImageData(0,0,scCv.width,scCv.height).data;
+    let clear=0,total=0;
+    for(let i=3;i<d.length;i+=4*23){ total++; if(d[i]===0) clear++; }
+    return total ? clear/total : 0;
+  }
+  function scratchAt(p){
+    const x=scCv.getContext("2d");
+    x.globalCompositeOperation="destination-out"; x.lineCap="round"; x.lineJoin="round"; x.lineWidth=38;
+    const a=sc.last||p;
+    x.beginPath(); x.moveTo(a.x,a.y); x.lineTo(p.x+0.01,p.y); x.stroke();
+    sc.last=p;
+    if(++sc.strokes%6===0 && clearedRatio()>=0.55) reveal();
+  }
+  scCv.addEventListener("pointerdown",e=>{ if(!sc||sc.done) return; sc.down=true; sc.last=null;
+    try{ scCv.setPointerCapture(e.pointerId); }catch(_){} scratchAt(scPoint(e)); e.preventDefault(); });
+  scCv.addEventListener("pointermove",e=>{ if(!sc||!sc.down||sc.done) return; scratchAt(scPoint(e)); e.preventDefault(); });
+  ["pointerup","pointercancel"].forEach(t=>scCv.addEventListener(t,()=>{ if(sc){ sc.down=false; sc.last=null; } }));
+
+  async function reveal(){
+    if(!sc || sc.done) return;
+    sc.done=true; $("#scRevealAll").hidden=true;
+    scCv.style.opacity="0"; setTimeout(()=>{ scCv.style.display="none"; },470);
+    confetti(scDlg.open ? scDlg : document.body); playFanfare();
+    if(sc.preview){ $("#scNote").textContent="That's how it works! Real cards unlock as you practise."; return; }
+    try{
+      const d=await rewardsCall({action:"scratch", card_no:sc.cardNo});
+      rw=d; renderRewards(); syncAccentOptions();
+      $("#btnResultGift").hidden=true;
+      const r=d.revealed||{};
+      if(r.kind==="theme"){
+        state.accent=r.key; save(); applyAccent(); syncAccentOptions();
+        $("#scNote").textContent="Your app now uses the "+(ACCENTS[r.key]||r.key)+" colour. Change it any time in Settings.";
+      } else if(r.kind==="title") $("#scNote").textContent="Your new title is on your Rewards shelf.";
+      else $("#scNote").textContent="Added to your Rewards shelf. Keep practising for the next card!";
+    }catch(e){
+      $("#scNote").textContent="Couldn't save this right now — your card will still be here to scratch next time.";
+    }
+  }
+  $("#scRevealAll").onclick=()=>{ if(sc && !sc.done) reveal(); };
+  $("#scDone").onclick=()=>{ if(scDlg.open && typeof scDlg.close==="function") scDlg.close(); else scDlg.removeAttribute("open"); };
+  $("#rwGift").onclick=()=>{ if(rw && rw.pending) openScratch(rw.pending); };
+  $("#btnResultGift").onclick=()=>{ if(rw && rw.pending) openScratch(rw.pending); };
+  $("#btnPreviewCard").onclick=()=>{ closeDlg(); openScratch(0,true); };
 
   /* ---------------- student identity (Phase 1) ---------------- */
   const idDlg=$("#idDlg");
@@ -1531,6 +1878,7 @@
     save(); refreshStudentLabel();
     if(idDlg.open && typeof idDlg.close==="function") idDlg.close(); else idDlg.removeAttribute("open");
     toast("Signed in as "+code+" · #"+roll+".");
+    refreshRewards(false);
   };
   $("#btnChangeStudent").onclick=()=>{ closeDlg(); openId(); };   // leave settings, open sign-in on top
 
@@ -1568,6 +1916,7 @@ pause detection, and the overall score from that.`;
   refreshMode(); renderProgress(); sizeScope(); showPhrase(state.idx||0);
   refreshStudentLabel();
   if(!(state.student && state.student.code && state.student.roll)) openId();   // first run: ask who's practising
+  syncAccentOptions(); refreshRewards(false);
 })();
 </script>
 
