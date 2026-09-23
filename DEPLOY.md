@@ -75,6 +75,14 @@ same MySQL database - no extra setup; the `rewards` table creates itself.
 - Tune the numbers at the top of `rewards.php` once you have a few weeks of data.
 - Settings > "Preview a scratch card" shows the effect without saving anything.
 
+## Student progress view
+Signed-in students see a "Your progress" card: their day streak (🔥 badge in the
+top bar too, grey until they practise today), best streak, sentences tried and
+mastered, and a 7-day chart of tries per day (tap a day for its tries and
+average), plus this week's average vs last week. It comes from the same
+`rewards.php` call - nothing to set up. Without the server it falls back to the
+on-phone "Your session" card.
+
 ## Indian voice audio (one-time)
 The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
 words and the Listen button, falling back to the browser voice if a clip is missing.

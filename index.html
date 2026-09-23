@@ -414,6 +414,37 @@
   @keyframes fall{ to{ transform:translate(var(--dx),105vh) rotate(var(--rot)); opacity:.9; } }
   @media (prefers-reduced-motion: reduce){ .confetti{ display:none; } .rw-bar > i{ transition:none; } }
 
+  /* ---------- student progress ---------- */
+  .streakpill{ display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:12px; font-weight:500;
+    padding:5px 9px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); line-height:1; }
+  .streakpill[hidden]{ display:none !important; }
+  .streakpill.cold{ color:var(--muted); }
+  .streakpill.cold .fl{ filter:grayscale(1); opacity:.6; }
+  .top{ flex-wrap:wrap; row-gap:8px; }                 /* never overlap: wrap as a last resort */
+  @media (max-width:440px){ .brand .tag{ display:none; } .top{ gap:8px; } }
+  @media (max-width:400px){ .mode #modeText{ display:none; } .mode{ padding:7px; } .brand h1{ font-size:21px; } }
+  @media (max-width:340px){ .top{ gap:6px; } .brand h1{ font-size:18px; } .iconbtn{ padding:6px 8px; } .streakpill{ padding:5px 7px; } }
+  #progressCard[hidden], #sessionCard[hidden]{ display:none !important; }
+  .pg-top{ display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:10px; margin-top:12px; }
+  .pg-tile{ border:1px solid var(--line-soft); border-radius:var(--r-sm); background:var(--ground); padding:11px 12px; min-width:0; }
+  .pg-tile.streak{ display:flex; align-items:center; gap:9px; }
+  .pg-flame{ font-size:28px; line-height:1; }
+  .pg-flame.cold{ filter:grayscale(1); opacity:.5; }
+  .pg-num{ font-family:var(--ui); font-weight:600; font-size:26px; line-height:1; }
+  .pg-lab{ font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.3; }
+  .pg-msg{ margin-top:12px; font-size:14px; line-height:1.5; }
+  .pg-week{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; align-items:end; }
+  .pg-day{ background:none; border:0; padding:0; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; min-width:0; }
+  .pg-col{ width:100%; height:78px; display:flex; align-items:flex-end; justify-content:center; border-bottom:1px solid var(--line); }
+  .pg-col i{ display:block; width:min(24px,70%); border-radius:4px 4px 0 0; background:var(--accent); transition:height .5s cubic-bezier(.2,.7,.2,1); }
+  .pg-day[aria-pressed="true"] .pg-col{ background:linear-gradient(to top, var(--accent-soft), transparent); border-radius:6px 6px 0 0; }
+  .pg-dow{ font-family:var(--mono); font-size:10.5px; color:var(--muted); }
+  .pg-day.today .pg-dow{ color:var(--ink); font-weight:600; }
+  .pg-cap{ margin-top:10px; font-size:13px; color:var(--ink); min-height:1.5em; }
+  .pg-sum{ margin-top:4px; font-size:12.5px; color:var(--muted); }
+  .pg-sum .up{ color:var(--good); } .pg-sum .down{ color:var(--crit); }
+  @media (prefers-reduced-motion: reduce){ .pg-col i{ transition:none; } }
+
   /* colour themes unlocked by scratch cards (jade is the default) */
   :root[data-accent="saffron"]{ --accent:#b45309; --accent-soft:#f5e6d3; }
   :root[data-accent="ocean"]  { --accent:#1d4ed8; --accent-soft:#dce5fb; }
@@ -438,6 +469,7 @@
       <span class="tag">read · speak · score</span>
     </div>
     <span class="sp"></span>
+    <button class="streakpill" id="streakPill" type="button" hidden aria-label="Your streak"><span class="fl" aria-hidden="true">&#128293;</span><span id="streakPillN">0</span></button>
     <span class="mode" id="modePill" title="Scoring source"><span class="dot"></span><span id="modeText">Demo</span></span>
     <button class="iconbtn" id="btnTheme" aria-label="Toggle light or dark theme" title="Theme">◐</button>
     <button class="iconbtn" id="btnSettings" aria-label="Settings" title="Settings">⚙</button>
@@ -565,6 +597,24 @@
       </div>
     </section>
 
+    <!-- ============ STUDENT PROGRESS ============ -->
+    <section class="card" id="progressCard" hidden>
+      <div class="eyebrow"><span>Your progress</span><span class="rw-pts" id="pgBest"></span></div>
+      <div class="pg-top">
+        <div class="pg-tile streak">
+          <span class="pg-flame" id="pgFlame" aria-hidden="true">&#128293;</span>
+          <div><div class="pg-num" id="pgStreak">0</div><div class="pg-lab">day streak</div></div>
+        </div>
+        <div class="pg-tile"><div class="pg-num" id="pgTried">0</div><div class="pg-lab" id="pgTriedLab">sentences tried</div></div>
+        <div class="pg-tile"><div class="pg-num" id="pgMastered">0</div><div class="pg-lab">mastered</div></div>
+      </div>
+      <div class="pg-msg" id="pgMsg"></div>
+      <div class="section-t" style="margin:18px 0 10px">Your last 7 days &middot; tries per day</div>
+      <div class="pg-week" id="pgWeek"></div>
+      <div class="pg-cap" id="pgCap" aria-live="polite"></div>
+      <div class="pg-sum" id="pgSum"></div>
+    </section>
+
     <!-- ============ REWARDS ============ -->
     <section class="card" id="rewardsCard" hidden aria-live="polite">
       <div class="eyebrow"><span>Rewards</span><span class="rw-pts" id="rwPoints">0 points</span></div>
@@ -583,8 +633,8 @@
       <div class="rw-shelf" id="rwShelf"></div>
     </section>
 
-    <!-- ============ PROGRESS ============ -->
-    <section class="card">
+    <!-- ============ SESSION (shown when the server progress isn't available) ============ -->
+    <section class="card" id="sessionCard">
       <div class="eyebrow" style="margin-bottom:12px">Your session</div>
       <div class="progress">
         <div><div class="big" id="pAttempts">0</div><div class="lil">attempts</div></div>
@@ -1648,11 +1698,12 @@
   }
   async function refreshRewards(afterAttempt){
     const stu=state.student||{};
-    if(!stu.code || !stu.roll){ rw=null; $("#rewardsCard").hidden=true; return; }
+    if(!stu.code || !stu.roll){ rw=null; $("#rewardsCard").hidden=true; renderStudentProgress(); return; }
     const before=rw;
     try{ rw=await rewardsCall({action:"status"}); }
-    catch(e){ rw=null; $("#rewardsCard").hidden=true; return; }   // no backend / DB: just hide rewards
-    renderRewards(); syncAccentOptions();
+    catch(e){ rw=null; $("#rewardsCard").hidden=true; renderStudentProgress(); return; }   // no backend / DB: hide, show session card
+    if(afterAttempt) pgSel=6;                  // jump the 7-day chart back to today
+    renderRewards(); renderStudentProgress(); syncAccentOptions();
     if(afterAttempt) showGain(before);
   }
 
@@ -1693,6 +1744,70 @@
     if(rw.unlocks.stars) chip("⭐ Gold Star ×"+rw.unlocks.stars);
   }
 
+  /* ---- the student's own progress: streak + last 7 days ---- */
+  let pgSel=6;   // selected day in the 7-day chart (6 = today)
+  const tries=n=>n+(n===1?" try":" tries");
+  const DAYS={Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
+  const dayName=d=>d.today?"Today":(DAYS[d.dow]||d.dow);
+  function renderStudentProgress(){
+    const P=rw && rw.progress;
+    $("#progressCard").hidden=!P; $("#sessionCard").hidden=!!P;
+    const pill=$("#streakPill");
+    if(!P){ pill.hidden=true; return; }
+
+    // top-bar pill: grey flame until today's practice is done
+    pill.hidden = !(P.streak>0 || P.total_tries>0);
+    $("#streakPillN").textContent=P.streak;
+    pill.classList.toggle("cold", !P.practised_today);
+    pill.setAttribute("aria-label", P.streak+" day streak"+(P.practised_today?"":". Practise today to keep it."));
+
+    $("#pgStreak").textContent=P.streak;
+    $("#pgFlame").classList.toggle("cold", !P.practised_today);
+    $("#pgTried").textContent=P.sentences_tried;
+    $("#pgTriedLab").textContent="of "+LIBRARY.length+" sentences tried";
+    $("#pgMastered").textContent=P.mastered;
+    $("#pgBest").textContent = P.best_streak>0 ? "best streak: "+P.best_streak+" day"+(P.best_streak>1?"s":"") : "";
+
+    let msg;
+    if(P.streak>0 && P.practised_today)
+      msg = P.streak===1 ? "Great start! Come back tomorrow to make it a 2-day streak."
+                         : "\uD83D\uDD25 You've practised today \u2014 your "+P.streak+"-day streak is safe. See you tomorrow!";
+    else if(P.streak>0) msg="Practise today to keep your "+P.streak+"-day streak going!";
+    else if(P.best_streak>0) msg="Start a new streak today \u2014 your best is "+P.best_streak+" day"+(P.best_streak>1?"s":"")+".";
+    else msg="Read your first sentence today to start a streak.";
+    $("#pgMsg").textContent=msg;
+
+    // 7 columns = tries per day; tap a day to see its tries and average
+    const wk=P.week, max=Math.max(1,...wk.map(d=>d.n));
+    const host=$("#pgWeek"); host.innerHTML="";
+    wk.forEach((d,i)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="pg-day"+(d.today?" today":"");
+      b.setAttribute("aria-pressed", i===pgSel?"true":"false");
+      b.setAttribute("aria-label", dayName(d)+": "+tries(d.n)+(d.avg!=null?", average "+d.avg.toFixed(1):""));
+      const col=document.createElement("span"); col.className="pg-col";
+      if(d.n>0){ const f=document.createElement("i"); f.style.height=Math.max(6,Math.round(d.n/max*100))+"%"; col.appendChild(f); }
+      const lab=document.createElement("span"); lab.className="pg-dow"; lab.textContent=d.today?"Today":d.dow;
+      b.append(col,lab);
+      b.onclick=()=>{ pgSel=i; renderStudentProgress(); };
+      host.appendChild(b);
+    });
+    const sd=wk[pgSel]||wk[6];
+    $("#pgCap").textContent = dayName(sd)+": "+(sd.n ? tries(sd.n)+" \u00B7 average "+sd.avg.toFixed(1)
+                                                   : (sd.today ? "no practice yet \u2014 read one sentence to light up today!" : "no practice"));
+
+    const sum=$("#pgSum"); sum.textContent="";
+    if(!P.week_tries){ sum.textContent="No practice in the last 7 days yet."; return; }
+    sum.append("This week: "+tries(P.week_tries)+" \u00B7 average "+P.week_avg.toFixed(1)+" ");
+    if(P.prev_week_avg!=null){
+      const dlt=Math.round((P.week_avg-P.prev_week_avg)*10)/10, sp=document.createElement("span");
+      if(dlt>=0.1){ sp.className="up"; sp.textContent="\u25B2 +"+dlt.toFixed(1)+" vs last week"; }
+      else if(dlt<=-0.1){ sp.className="down"; sp.textContent="\u25BC "+Math.abs(dlt).toFixed(1)+" lower than last week"; }
+      else sp.textContent="\u25A0 same as last week";
+      sum.appendChild(sp);
+    }
+  }
+  $("#streakPill").onclick=()=>{ $("#progressCard").scrollIntoView({behavior:"smooth",block:"start"}); };
+
   // the single most useful next step, with a button to jump straight to it
   function renderHint(){
     const h=rw.hint||{}, el=$("#rwHint"); el.innerHTML="";
@@ -1729,6 +1844,8 @@
     if(L.practice>0) chip("+"+L.practice+" practice");
     if(L.pb_points>0) chip("+"+L.pb_points+" personal best!","pb");
     if(L.mastery_points>0) chip("+"+L.mastery_points+" sentence mastered! 🏆","pb");
+    const P=rw.progress, P0=before && before.progress;
+    if(P && P0 && P.streak>P0.streak) chip("\uD83D\uDD25 "+P.streak+"-day streak!","pb");
     const total=L.practice+L.pb_points+L.mastery_points;
     if(total<=0) chip("No new points — only your best 2 tries of each sentence count per day. Try another sentence!","zero");
     g.hidden=false;

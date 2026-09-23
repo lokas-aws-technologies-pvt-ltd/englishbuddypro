@@ -3,6 +3,7 @@
  * Phrase Coach - scratch-card rewards (in-app rewards only).
  * ---------------------------------------------------------------------------
  * POST JSON  { class_code, roll_no, action: "status" | "scratch", card_no? }
+ * The status also carries the student's own progress (streak, last 7 days).
  *
  * Points and card unlocks are worked out HERE, from the attempts log.php saved,
  * so they can't be changed from the phone. The app only displays the result.
@@ -145,6 +146,47 @@ function pc_gate($c, $since) {
           'improve_ok'=> $pbs >= PC_GATE_PBS || $mast >= 1 || $avgUp];
 }
 
+/* The student's own progress: streak, best streak and the last 7 days. */
+function pc_progress($c, $today) {
+  $days = [];                                          // Y-m-d => [tries, sum of scores]
+  $phrases = [];
+  foreach ($c['valid'] as $r) {
+    $d = substr($r['created_at'], 0, 10);
+    if (!isset($days[$d])) $days[$d] = ['n'=>0, 'sum'=>0.0];
+    $days[$d]['n']++; $days[$d]['sum'] += (float)$r['overall'];
+    if ((int)$r['phrase_idx'] > 0) $phrases[(int)$r['phrase_idx']] = true;
+  }
+  $t = strtotime($today);
+  $shift = function($d, $n) { return date('Y-m-d', strtotime(($n >= 0 ? '+' : '') . $n . ' day', strtotime($d))); };
+
+  $week = [];
+  for ($i = 6; $i >= 0; $i--) {
+    $d = $shift($today, -$i); $v = $days[$d] ?? null;
+    $week[] = ['date'=>$d, 'dow'=>date('D', strtotime($d)), 'today'=>$i === 0,
+               'n'=>$v ? $v['n'] : 0, 'avg'=>$v ? round($v['sum'] / $v['n'], 1) : null];
+  }
+
+  $sum7 = 0; $n7 = 0; $sumP = 0; $nP = 0;             // this 7 days vs the 7 before
+  foreach ($days as $d => $v) {
+    $age = (int)round(($t - strtotime($d)) / 86400);
+    if ($age >= 0 && $age <= 6)       { $sum7 += $v['sum']; $n7 += $v['n']; }
+    elseif ($age >= 7 && $age <= 13)  { $sumP += $v['sum']; $nP += $v['n']; }
+  }
+
+  // current streak: consecutive practice days ending today (or yesterday, still savable today)
+  $streak = 0;
+  $cur = isset($days[$today]) ? $today : (isset($days[$shift($today, -1)]) ? $shift($today, -1) : null);
+  while ($cur !== null && isset($days[$cur])) { $streak++; $cur = $shift($cur, -1); }
+
+  $best = 0; $run = 0; $prev = null; $keys = array_keys($days); sort($keys);
+  foreach ($keys as $d) { $run = ($prev !== null && $shift($prev, 1) === $d) ? $run + 1 : 1; $best = max($best, $run); $prev = $d; }
+
+  return ['streak'=>$streak, 'best_streak'=>$best, 'practised_today'=>isset($days[$today]),
+          'week'=>$week, 'week_tries'=>$n7, 'week_avg'=>$n7 ? round($sum7 / $n7, 1) : null,
+          'prev_week_avg'=>$nP ? round($sumP / $nP, 1) : null,
+          'total_tries'=>count($c['valid']), 'sentences_tried'=>count($phrases), 'mastered'=>count($c['mastered'])];
+}
+
 function pc_cards($pdo, $sid) {
   $st = $pdo->prepare("SELECT card_no, unlocked_at, scratched_at FROM rewards WHERE student_id=? ORDER BY card_no");
   $st->execute([$sid]);
@@ -251,6 +293,7 @@ function pc_status($pdo, $sid, $name) {
       'improve_ok'=>$g['improve_ok'],
     ],
     'hint'=>$hint,
+    'progress'=>pc_progress($c, $today),
     'unlocks'=>['themes'=>$themes, 'badges'=>$badges, 'title'=>$title, 'stars'=>$stars],
   ];
 }
