@@ -10,16 +10,16 @@
  *
  * Points
  *   Practice  : each attempt earns its score rounded (under 3 earns 1).
- *               Per day only the best 2 tries of each sentence count, and at
- *               most 30 tries a day. Silent / too-short takes earn nothing.
+ *               Per day only the best 2 tries of each sentence count, at most
+ *               30 tries a day, and at most 60 practice points a day.
+ *               Silent / too-short takes earn nothing.
  *   Improvement: beating your own best on a sentence earns 10 points per point
  *               gained (5.2 -> 6.8 = +16). Scoring 8+ on the same sentence on
- *               2 different days "masters" it: +20 once.
+ *               2 different days "masters" it: +20 once. No daily limit, so
+ *               improving is the only way past the practice cap.
  *
- * Cards unlock at 100, 250, 450, 700, 1000 points, then every +350 - but only
- * if, since the previous card, the student practised on 2 different days AND
- * showed improvement (3 new personal bests, OR 1 newly mastered sentence, OR a
- * recent 10-attempt average at least 0.5 above the 10 before the last card).
+ * One goal: a card unlocks as soon as the points reach 100, 250, 450, 700,
+ * 1000, then every +350. A full bar always means a card.
  * ---------------------------------------------------------------------------
  */
 
@@ -41,15 +41,12 @@ const PC_CARD_STEPS      = [100, 250, 450, 700, 1000];  // points needed for car
 const PC_STEP_AFTER      = 350;                          // then every +350
 const PC_BEST_PER_DAY    = 2;     // best N tries per sentence per day count
 const PC_MAX_PER_DAY     = 30;    // at most this many counted tries a day
+const PC_PRACTICE_CAP    = 60;    // at most this many practice points a day
 const PC_MIN_DURATION_S  = 1.0;   // shorter takes earn nothing
 const PC_PB_RATE         = 10;    // improvement points per 1.0 of score gained
 const PC_MASTERY_SCORE   = 8.0;
 const PC_MASTERY_DAYS    = 2;
 const PC_MASTERY_BONUS   = 20;
-const PC_GATE_DAYS       = 2;     // practice days needed since the last card
-const PC_GATE_PBS        = 3;     // ...and 3 personal bests (or another improvement)
-const PC_GATE_WINDOW     = 10;    // attempts in each average for the "average rose" test
-const PC_GATE_AVG_GAIN   = 0.5;
 
 /* ---------------- the in-app reward behind each card ---------------- */
 function pc_reward($n) {
@@ -75,27 +72,27 @@ function pc_points_for($v) { return $v < 3 ? 1 : (int)round($v); }
 function pc_valid($r) {
   return $r['overall'] !== null && ($r['duration_s'] === null || (float)$r['duration_s'] >= PC_MIN_DURATION_S);
 }
-function pc_avg($rows) {
-  return $rows ? array_sum(array_map(function($r){ return (float)$r['overall']; }, $rows)) / count($rows) : null;
-}
 
 /* Work out all points from a student's attempts (chronological). Every step is a
-   "keep the top N" choice, so adding an attempt can never lower the total. */
+   "keep the top N" choice or a cap, so adding an attempt can never lower the total. */
 function pc_compute($rows) {
   $valid = array_values(array_filter($rows, 'pc_valid'));
 
-  // practice: best 2 per sentence per day, then best 30 per day
+  // practice: best 2 per sentence per day, then best 30 per day, then the daily cap
   $byDay = [];
   foreach ($valid as $r) $byDay[substr($r['created_at'], 0, 10)][] = $r;
-  $practice = 0;
+  $practice = 0; $practiceDay = [];
   $desc = function($a, $b){ return (float)$b['overall'] <=> (float)$a['overall']; };
-  foreach ($byDay as $list) {
+  foreach ($byDay as $day => $list) {
     $byPh = [];
     foreach ($list as $r) $byPh[(int)$r['phrase_idx']][] = $r;
     $counted = [];
     foreach ($byPh as $pl) { usort($pl, $desc); foreach (array_slice($pl, 0, PC_BEST_PER_DAY) as $r) $counted[] = $r; }
     usort($counted, $desc);
-    foreach (array_slice($counted, 0, PC_MAX_PER_DAY) as $r) $practice += pc_points_for((float)$r['overall']);
+    $sum = 0;
+    foreach (array_slice($counted, 0, PC_MAX_PER_DAY) as $r) $sum += pc_points_for((float)$r['overall']);
+    $practiceDay[$day] = min(PC_PRACTICE_CAP, $sum);
+    $practice += $practiceDay[$day];
   }
 
   // improvement: personal bests and mastery
@@ -116,34 +113,8 @@ function pc_compute($rows) {
       }
     }
   }
-  return ['valid'=>$valid, 'practice'=>$practice, 'improve'=>$improve, 'total'=>$practice + $improve,
+  return ['valid'=>$valid, 'practice'=>$practice, 'practiceDay'=>$practiceDay, 'improve'=>$improve, 'total'=>$practice + $improve,
           'best'=>$best, 'high'=>$high, 'mastered'=>$mastered, 'pbT'=>$pbT, 'mastT'=>$mastT];
-}
-
-/* Has the student practised and improved since $since (the last card's unlock time)? */
-function pc_gate($c, $since) {
-  $days = []; $after = []; $before = [];
-  foreach ($c['valid'] as $r) {
-    if ($r['created_at'] > $since) { $days[substr($r['created_at'], 0, 10)] = true; $after[] = $r; }
-    else $before[] = $r;
-  }
-  $pbs = 0;  foreach ($c['pbT']   as $t) if ($t > $since) $pbs++;
-  $mast = 0; foreach ($c['mastT'] as $t) if ($t > $since) $mast++;
-
-  // average rose: recent 10 vs the 10 before the last card (or vs the first 10 ever)
-  $avgUp = false;
-  if ($before) {
-    $base = array_slice($before, -PC_GATE_WINDOW);
-    $rec  = count($after) >= PC_GATE_WINDOW ? array_slice($after, -PC_GATE_WINDOW) : null;
-  } else {
-    $base = count($after) >= 2 * PC_GATE_WINDOW ? array_slice($after, 0, PC_GATE_WINDOW) : null;
-    $rec  = $base ? array_slice($after, -PC_GATE_WINDOW) : null;
-  }
-  if ($base && $rec) $avgUp = pc_avg($rec) >= pc_avg($base) + PC_GATE_AVG_GAIN;
-
-  return ['days'=>count($days), 'days_ok'=>count($days) >= PC_GATE_DAYS,
-          'pbs'=>$pbs, 'mastered'=>$mast, 'avg_up'=>$avgUp,
-          'improve_ok'=> $pbs >= PC_GATE_PBS || $mast >= 1 || $avgUp];
 }
 
 /* The student's own progress: streak, best streak and the last 7 days. */
@@ -212,30 +183,28 @@ function pc_status($pdo, $sid, $name) {
     $lr = $rows[count($rows) - 1];
     $masteredNow = count($c['mastT']) > count($prev['mastT']);
     $mastery = $masteredNow ? PC_MASTERY_BONUS : 0;
+    $lastDay = substr($lr['created_at'], 0, 10);
     $last = ['attempt_id'=>(int)$lr['id'], 'phrase_idx'=>(int)$lr['phrase_idx'],
              'practice'=>$c['practice'] - $prev['practice'],
              'pb_points'=>($c['improve'] - $prev['improve']) - $mastery, 'mastery_points'=>$mastery,
-             'pb'=>count($c['pbT']) > count($prev['pbT']), 'mastered'=>$masteredNow];
+             'pb'=>count($c['pbT']) > count($prev['pbT']), 'mastered'=>$masteredNow,
+             'capped'=>($c['practiceDay'][$lastDay] ?? 0) >= PC_PRACTICE_CAP];
   }
 
-  // unlock the next card when its points AND its practice/improvement check are met
+  // unlock the next card as soon as its points are reached
   $cards = $sid ? pc_cards($pdo, $sid) : [];
   if ($sid) {
     for ($guard = 0; $guard < 3; $guard++) {
       $n = count($cards) + 1;
-      $since = $cards ? $cards[count($cards) - 1]['unlocked_at'] : '0000-00-00 00:00:00';
-      $g = pc_gate($c, $since);
-      if (!($c['total'] >= pc_threshold($n) && $g['days_ok'] && $g['improve_ok'])) break;
+      if ($c['total'] < pc_threshold($n)) break;
       $pdo->prepare("INSERT IGNORE INTO rewards (student_id, card_no, reward_key, unlocked_at) VALUES (?,?,?,NOW())")
           ->execute([$sid, $n, pc_reward($n)['key']]);
       $cards = pc_cards($pdo, $sid);
     }
   }
 
-  // the next card and what still stands between the student and it
+  // the next card: one goal, points only
   $n = count($cards) + 1;
-  $since = $cards ? $cards[count($cards) - 1]['unlocked_at'] : '0000-00-00 00:00:00';
-  $g = pc_gate($c, $since);
   $thr = pc_threshold($n);
   $from = $n > 1 ? pc_threshold($n - 1) : 0;
   $need = max(0, $thr - $c['total']);
@@ -252,20 +221,19 @@ function pc_status($pdo, $sid, $name) {
     $cand = ['phrase_idx'=>$p, 'today'=>isset($days[$today])];
     if ($mTarget === null || ($mTarget['today'] && !$cand['today'])) $mTarget = $cand;
   }
-  $recentAvg = pc_avg(array_slice($c['valid'], -PC_GATE_WINDOW));
-  $perSentence = max(1, pc_points_for($recentAvg ?? 5));
+  $practiceToday = $c['practiceDay'][$today] ?? 0;
+  $capped = $practiceToday >= PC_PRACTICE_CAP;
 
   $pending = null;
   foreach ($cards as $cd) if ($cd['scratched_at'] === null) { $pending = (int)$cd['card_no']; break; }
 
-  if ($pending)                     $hint = ['kind'=>'scratch', 'card_no'=>$pending];
-  elseif (!$c['valid'])             $hint = ['kind'=>'start'];
-  elseif (!$g['improve_ok'])        $hint = $pbTarget
-                                      ? ['kind'=>'pb', 'need'=>PC_GATE_PBS - $g['pbs'], 'phrase_idx'=>$pbTarget['phrase_idx'], 'best'=>$pbTarget['best'], 'alt'=>$mTarget]
-                                      : ($mTarget ? ['kind'=>'master'] + $mTarget : ['kind'=>'pb', 'need'=>PC_GATE_PBS - $g['pbs']]);
-  elseif ($need > 0)                $hint = ['kind'=>'points', 'need'=>$need, 'sentences'=>(int)ceil($need / $perSentence)];
-  elseif (!$g['days_ok'])           $hint = ['kind'=>'days', 'have'=>$g['days'], 'need'=>PC_GATE_DAYS];
-  else                              $hint = ['kind'=>'ready'];
+  // the single next action: the quickest way to more points right now
+  if ($pending)                         $hint = ['kind'=>'scratch', 'card_no'=>$pending];
+  elseif (!$c['valid'])                 $hint = ['kind'=>'start'];
+  elseif ($mTarget && !$mTarget['today']) $hint = ['kind'=>'master', 'phrase_idx'=>$mTarget['phrase_idx'], 'bonus'=>PC_MASTERY_BONUS, 'capped'=>$capped];
+  elseif ($pbTarget)                    $hint = ['kind'=>'pb', 'phrase_idx'=>$pbTarget['phrase_idx'], 'best'=>$pbTarget['best'], 'rate'=>PC_PB_RATE, 'capped'=>$capped];
+  elseif ($capped)                      $hint = ['kind'=>'tomorrow'];
+  else                                  $hint = ['kind'=>'new'];
 
   // what the scratched cards have unlocked
   $cardsOut = []; $themes = []; $badges = []; $title = null; $stars = 0;
@@ -286,12 +254,8 @@ function pc_status($pdo, $sid, $name) {
     'stats'=>['attempts'=>count($c['valid']), 'personal_bests'=>count($c['pbT']), 'mastered'=>count($c['mastered'])],
     'last'=>$last,
     'cards'=>$cardsOut, 'pending'=>$pending,
-    'next'=>[
-      'no'=>$n, 'reward'=>pc_reward($n), 'threshold'=>$thr, 'from'=>$from, 'need'=>$need, 'points_ok'=>$need === 0,
-      'days'=>$g['days'], 'days_need'=>PC_GATE_DAYS, 'days_ok'=>$g['days_ok'],
-      'pbs'=>$g['pbs'], 'pbs_need'=>PC_GATE_PBS, 'mastered_since'=>$g['mastered'], 'avg_up'=>$g['avg_up'],
-      'improve_ok'=>$g['improve_ok'],
-    ],
+    'next'=>['no'=>$n, 'threshold'=>$thr, 'from'=>$from, 'need'=>$need],   // the gift itself stays a mystery
+    'today'=>['practice'=>$practiceToday, 'cap'=>PC_PRACTICE_CAP, 'capped'=>$capped],
     'hint'=>$hint,
     'progress'=>pc_progress($c, $today),
     'unlocks'=>['themes'=>$themes, 'badges'=>$badges, 'title'=>$title, 'stars'=>$stars],

@@ -373,25 +373,27 @@
   /* ---------- rewards ---------- */
   #rewardsCard[hidden]{ display:none !important; }
   .rw-pts{ font-family:var(--mono); font-size:11px; color:var(--ink); letter-spacing:.04em; text-transform:none; }
-  .rw-next{ display:flex; align-items:center; gap:12px; margin:12px 0 12px; }
-  .rw-icon{ flex:none; width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  .rw-next{ display:flex; align-items:center; gap:12px; margin:0 0 12px; }
+  .rw-icon{ position:relative; flex:none; width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
     font-size:24px; background:var(--accent-soft); border:1px solid var(--line); }
+  .rw-icon .q{ position:absolute; right:-6px; top:-6px; width:19px; height:19px; border-radius:50%; background:var(--accent); color:var(--accent-ink);
+    font-family:var(--ui); font-size:11.5px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .rw-icon.ready{ animation:rwShake 1.2s ease-in-out infinite; }
+  .rw-icon.ready .q{ display:none; }
+  @keyframes rwShake{ 0%,60%,100%{ transform:rotate(0); } 70%{ transform:rotate(-9deg); } 80%{ transform:rotate(8deg); } 90%{ transform:rotate(-5deg); } }
   .rw-lil{ font-size:12px; color:var(--muted); }
   .rw-name{ font-family:var(--display); font-weight:600; font-size:17px; line-height:1.25; }
   .rw-bar{ height:10px; border-radius:6px; background:var(--surface-2); overflow:hidden; }
-  .rw-bar > i{ display:block; height:100%; width:0; border-radius:6px; background:var(--accent); transition:width .6s cubic-bezier(.2,.7,.2,1); }
+  .rw-bar > i{ display:block; height:100%; width:0; border-radius:6px; background:var(--accent); transition:width .9s cubic-bezier(.2,.7,.2,1); }
   .rw-barlab{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:6px; font-variant-numeric:tabular-nums; }
-  .rw-checks{ list-style:none; margin:14px 0 0; padding:0; display:grid; gap:7px; }
-  .rw-checks li{ display:flex; gap:9px; align-items:flex-start; font-size:13.5px; color:var(--muted); }
-  .rw-checks li b{ font-weight:500; color:var(--ink); }
-  .rw-checks .ck{ flex:none; width:18px; height:18px; border-radius:50%; border:1.5px solid var(--line); margin-top:1px;
-    display:inline-flex; align-items:center; justify-content:center; font-size:11px; line-height:1; color:transparent; }
-  .rw-checks li.done .ck{ background:var(--good); border-color:var(--good); color:#fff; }
   .rw-hint{ margin-top:14px; border-left:3px solid var(--accent); padding:4px 0 4px 12px; font-size:14px; line-height:1.5; }
+  .rw-hint:empty{ display:none; }
   .rw-hint .hq{ font-family:var(--display); display:block; margin-top:3px; color:var(--ink); }
   .rw-hint .btn{ margin-top:9px; }
-  .rw-shelf{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
-  .rw-shelf:empty{ display:none; }
+  .rw-more{ display:block; margin:14px 0 -4px auto; background:none; border:0; padding:4px 0; cursor:pointer;
+    font:inherit; font-size:13px; color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
+  .rw-more:hover{ color:var(--ink); }
+  .rw-shelf{ display:flex; flex-wrap:wrap; gap:6px; }
   .rw-chip{ font-size:12px; padding:4px 10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink); white-space:nowrap; }
   .rw-gift{ width:100%; margin-top:12px; justify-content:center; }
   .rw-gift[hidden]{ display:none !important; }
@@ -400,6 +402,9 @@
   .gain span{ font-family:var(--mono); font-size:12px; padding:4px 9px; border-radius:999px; background:var(--accent-soft); color:var(--ink); }
   .gain span.pb{ background:var(--good-soft); }
   .gain span.zero{ background:var(--surface-2); color:var(--muted); font-family:var(--ui); }
+  .gain span.note{ align-self:center; background:none; padding:4px 2px; font-family:var(--ui); font-size:12.5px; color:var(--muted); }
+  .gain .rw-bar{ flex:1 0 100%; height:8px; margin-top:4px; }
+  .gain .rw-barlab{ flex:1 0 100%; margin-top:0; }
 
   /* scratch card */
   .scratch{ position:relative; width:100%; max-width:320px; height:180px; margin:4px auto 0; border-radius:14px; overflow:hidden;
@@ -412,18 +417,13 @@
   .confetti{ position:fixed; top:-12px; width:8px; height:12px; border-radius:2px; z-index:120; pointer-events:none;
     animation:fall 1.5s cubic-bezier(.25,.6,.4,1) forwards; }
   @keyframes fall{ to{ transform:translate(var(--dx),105vh) rotate(var(--rot)); opacity:.9; } }
-  @media (prefers-reduced-motion: reduce){ .confetti{ display:none; } .rw-bar > i{ transition:none; } }
+  @media (prefers-reduced-motion: reduce){ .confetti{ display:none; } .rw-bar > i{ transition:none; } .rw-icon.ready{ animation:none; } }
 
   /* ---------- student progress ---------- */
-  .streakpill{ display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:12px; font-weight:500;
-    padding:5px 9px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--ink); line-height:1; }
-  .streakpill[hidden]{ display:none !important; }
-  .streakpill.cold{ color:var(--muted); }
-  .streakpill.cold .fl{ filter:grayscale(1); opacity:.6; }
   .top{ flex-wrap:wrap; row-gap:8px; }                 /* never overlap: wrap as a last resort */
   @media (max-width:440px){ .brand .tag{ display:none; } .top{ gap:8px; } }
   @media (max-width:400px){ .mode #modeText{ display:none; } .mode{ padding:7px; } .brand h1{ font-size:21px; } }
-  @media (max-width:340px){ .top{ gap:6px; } .brand h1{ font-size:18px; } .iconbtn{ padding:6px 8px; } .streakpill{ padding:5px 7px; } }
+  @media (max-width:340px){ .top{ gap:6px; } .brand h1{ font-size:18px; } .iconbtn{ padding:6px 8px; } }
   #progressCard[hidden], #sessionCard[hidden]{ display:none !important; }
   .pg-top{ display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:10px; margin-top:12px; }
   .pg-tile{ border:1px solid var(--line-soft); border-radius:var(--r-sm); background:var(--ground); padding:11px 12px; min-width:0; }
@@ -469,13 +469,48 @@
       <span class="tag">read · speak · score</span>
     </div>
     <span class="sp"></span>
-    <button class="streakpill" id="streakPill" type="button" hidden aria-label="Your streak"><span class="fl" aria-hidden="true">&#128293;</span><span id="streakPillN">0</span></button>
     <span class="mode" id="modePill" title="Scoring source"><span class="dot"></span><span id="modeText">Demo</span></span>
     <button class="iconbtn" id="btnTheme" aria-label="Toggle light or dark theme" title="Theme">◐</button>
     <button class="iconbtn" id="btnSettings" aria-label="Settings" title="Settings">⚙</button>
   </div>
 
   <div class="stack">
+
+    <!-- ============ NEXT GIFT: the one goal ============ -->
+    <section class="card" id="rewardsCard" hidden aria-live="polite">
+      <div class="rw-next">
+        <div class="rw-icon" id="rwBox" aria-hidden="true">&#127873;<span class="q">?</span></div>
+        <div style="min-width:0">
+          <div class="rw-lil">Next gift</div>
+          <div class="rw-name" id="rwNeed">&nbsp;</div>
+        </div>
+      </div>
+      <div class="rw-bar" role="progressbar" aria-label="Points toward your next gift" id="rwBar" aria-valuemin="0" aria-valuemax="100"><i id="rwBarFill"></i></div>
+      <div class="rw-barlab"><span id="rwBarLab"></span></div>
+      <button class="btn accent rw-gift" id="rwGift" type="button" hidden>&#127873; Tap to scratch your gift</button>
+      <div class="rw-hint" id="rwHint"></div>
+      <button class="rw-more" id="btnMyProgress" type="button" aria-expanded="false" aria-controls="progressCard">My progress</button>
+    </section>
+
+    <!-- ============ MY PROGRESS (opened from the gift card) ============ -->
+    <section class="card" id="progressCard" hidden>
+      <div class="eyebrow"><span>My progress</span><span class="rw-pts" id="pgBest"></span></div>
+      <div class="pg-top">
+        <div class="pg-tile streak">
+          <span class="pg-flame" id="pgFlame" aria-hidden="true">&#128293;</span>
+          <div><div class="pg-num" id="pgStreak">0</div><div class="pg-lab">day streak</div></div>
+        </div>
+        <div class="pg-tile"><div class="pg-num" id="pgTried">0</div><div class="pg-lab" id="pgTriedLab">sentences tried</div></div>
+        <div class="pg-tile"><div class="pg-num" id="pgMastered">0</div><div class="pg-lab">mastered</div></div>
+      </div>
+      <div class="pg-msg" id="pgMsg"></div>
+      <div class="section-t" style="margin:18px 0 10px">Your last 7 days &middot; tries per day</div>
+      <div class="pg-week" id="pgWeek"></div>
+      <div class="pg-cap" id="pgCap" aria-live="polite"></div>
+      <div class="pg-sum" id="pgSum"></div>
+      <div class="section-t" style="margin:18px 0 10px">Your gifts &middot; <span id="rwPoints">0 points</span></div>
+      <div class="rw-shelf" id="rwShelf"></div>
+    </section>
 
     <!-- ============ PRACTICE CARD ============ -->
     <section class="card" id="practice">
@@ -587,7 +622,7 @@
       <div class="coach" id="coach"></div>
 
       <div class="gain" id="gainLine" hidden></div>
-      <button class="btn accent rw-gift" id="btnResultGift" type="button" hidden>&#127873; New scratch card! Tap to scratch</button>
+      <button class="btn accent rw-gift" id="btnResultGift" type="button" hidden>&#127873; Gift unlocked! Tap to scratch</button>
 
       <div class="meta" id="meta"></div>
 
@@ -595,42 +630,6 @@
         <button class="btn accent grow" id="btnNext" type="button">Next phrase →</button>
         <button class="btn sm" id="btnRetry" type="button">Try this again</button>
       </div>
-    </section>
-
-    <!-- ============ STUDENT PROGRESS ============ -->
-    <section class="card" id="progressCard" hidden>
-      <div class="eyebrow"><span>Your progress</span><span class="rw-pts" id="pgBest"></span></div>
-      <div class="pg-top">
-        <div class="pg-tile streak">
-          <span class="pg-flame" id="pgFlame" aria-hidden="true">&#128293;</span>
-          <div><div class="pg-num" id="pgStreak">0</div><div class="pg-lab">day streak</div></div>
-        </div>
-        <div class="pg-tile"><div class="pg-num" id="pgTried">0</div><div class="pg-lab" id="pgTriedLab">sentences tried</div></div>
-        <div class="pg-tile"><div class="pg-num" id="pgMastered">0</div><div class="pg-lab">mastered</div></div>
-      </div>
-      <div class="pg-msg" id="pgMsg"></div>
-      <div class="section-t" style="margin:18px 0 10px">Your last 7 days &middot; tries per day</div>
-      <div class="pg-week" id="pgWeek"></div>
-      <div class="pg-cap" id="pgCap" aria-live="polite"></div>
-      <div class="pg-sum" id="pgSum"></div>
-    </section>
-
-    <!-- ============ REWARDS ============ -->
-    <section class="card" id="rewardsCard" hidden aria-live="polite">
-      <div class="eyebrow"><span>Rewards</span><span class="rw-pts" id="rwPoints">0 points</span></div>
-      <button class="btn accent rw-gift" id="rwGift" type="button" hidden>&#127873; You have a scratch card! Tap to scratch</button>
-      <div class="rw-next">
-        <div class="rw-icon" id="rwNextIcon" aria-hidden="true">&#127873;</div>
-        <div style="min-width:0">
-          <div class="rw-lil">Next scratch card <span id="rwNextNo"></span></div>
-          <div class="rw-name" id="rwNextName">&nbsp;</div>
-        </div>
-      </div>
-      <div class="rw-bar" role="progressbar" aria-label="Points toward the next card" id="rwBar" aria-valuemin="0" aria-valuemax="100"><i id="rwBarFill"></i></div>
-      <div class="rw-barlab"><span id="rwBarLab"></span><span id="rwBarNeed"></span></div>
-      <ul class="rw-checks" id="rwChecks"></ul>
-      <div class="rw-hint" id="rwHint"></div>
-      <div class="rw-shelf" id="rwShelf"></div>
     </section>
 
     <!-- ============ SESSION (shown when the server progress isn't available) ============ -->
@@ -1707,31 +1706,22 @@
     if(afterAttempt) showGain(before);
   }
 
+  // how full the bar is: only the stretch from the last gift to the next one
+  const barPct=(points,n)=>{ const span=Math.max(1,n.threshold-n.from); return Math.round(Math.min(span,Math.max(0,points-n.from))/span*100); };
+  const morePts=n=>n+" more point"+(n===1?"":"s");
+
+  // one goal: a mystery gift, one bar, one next step
   function renderRewards(){
     const card=$("#rewardsCard");
     if(!rw){ card.hidden=true; return; }
     card.hidden=false;
-    const n=rw.next;
-    $("#rwPoints").textContent=rw.points.toLocaleString()+" points";
+    const n=rw.next, pct=rw.pending ? 100 : barPct(rw.points,n);
+    $("#rwNeed").textContent = rw.pending ? "Your gift is ready!" : morePts(n.need);
+    $("#rwBox").classList.toggle("ready", !!rw.pending);
     $("#rwGift").hidden=!rw.pending;
-    $("#rwNextIcon").textContent=n.reward.icon;
-    $("#rwNextNo").textContent="#"+n.no;
-    $("#rwNextName").textContent=n.reward.name;
-
-    const span=Math.max(1,n.threshold-n.from), got=Math.min(span,Math.max(0,rw.points-n.from));
-    const pct=Math.round(got/span*100);
     $("#rwBarFill").style.width=pct+"%"; $("#rwBar").setAttribute("aria-valuenow",pct);
-    $("#rwBarLab").textContent=rw.points+" / "+n.threshold+" points";
-    $("#rwBarNeed").textContent=n.need>0? n.need+" to go" : "points reached ✓";
-
-    // everything the next card needs, ticked off as it's met
-    const since = n.no>1 ? " since your last card" : "";
-    const ul=$("#rwChecks"); ul.innerHTML="";
-    const item=(done,html)=>{ const li=document.createElement("li"); if(done) li.className="done";
-      li.innerHTML='<span class="ck" aria-hidden="true">✓</span><span>'+html+(done?' <span class="sr-only">(done)</span>':'')+'</span>'; ul.appendChild(li); };
-    item(n.points_ok, "<b>Reach "+n.threshold+" points</b>");
-    item(n.days_ok, "<b>Practise on "+n.days_need+" different days</b>"+since+" ("+Math.min(n.days,n.days_need)+"/"+n.days_need+")");
-    item(n.improve_ok, "<b>Show improvement</b>"+since+": beat your best on "+n.pbs_need+" sentences ("+Math.min(n.pbs,n.pbs_need)+"/"+n.pbs_need+"), or master a sentence");
+    $("#rwBarLab").textContent = rw.pending ? "" : rw.points.toLocaleString()+" / "+n.threshold.toLocaleString()+" points";
+    $("#rwPoints").textContent=rw.points.toLocaleString()+" points";
 
     renderHint();
 
@@ -1749,17 +1739,11 @@
   const tries=n=>n+(n===1?" try":" tries");
   const DAYS={Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
   const dayName=d=>d.today?"Today":(DAYS[d.dow]||d.dow);
+  let pgOpen=false;   // "My progress" stays closed so the gift is the only goal on screen
   function renderStudentProgress(){
     const P=rw && rw.progress;
-    $("#progressCard").hidden=!P; $("#sessionCard").hidden=!!P;
-    const pill=$("#streakPill");
-    if(!P){ pill.hidden=true; return; }
-
-    // top-bar pill: grey flame until today's practice is done
-    pill.hidden = !(P.streak>0 || P.total_tries>0);
-    $("#streakPillN").textContent=P.streak;
-    pill.classList.toggle("cold", !P.practised_today);
-    pill.setAttribute("aria-label", P.streak+" day streak"+(P.practised_today?"":". Practise today to keep it."));
+    $("#progressCard").hidden=!(P && pgOpen); $("#sessionCard").hidden=!!P;
+    if(!P) return;
 
     $("#pgStreak").textContent=P.streak;
     $("#pgFlame").classList.toggle("cold", !P.practised_today);
@@ -1806,52 +1790,69 @@
       sum.appendChild(sp);
     }
   }
-  $("#streakPill").onclick=()=>{ $("#progressCard").scrollIntoView({behavior:"smooth",block:"start"}); };
+  $("#btnMyProgress").onclick=()=>{
+    pgOpen=!pgOpen;
+    $("#btnMyProgress").textContent = pgOpen ? "Hide my progress" : "My progress";
+    $("#btnMyProgress").setAttribute("aria-expanded", pgOpen?"true":"false");
+    renderStudentProgress();
+    if(pgOpen) $("#progressCard").scrollIntoView({behavior:"smooth",block:"start"});
+  };
 
   // the single most useful next step, with a button to jump straight to it
+  const CAPPED="Practice points are full for today. ";
   function renderHint(){
     const h=rw.hint||{}, el=$("#rwHint"); el.innerHTML="";
     const say=t=>{ const s=document.createElement("span"); s.textContent=t; el.appendChild(s); };
     const quote=i=>{ const q=document.createElement("span"); q.className="hq"; q.textContent="“"+phraseText(i)+"”"; el.appendChild(q); };
-    const go=i=>{ const b=document.createElement("button"); b.type="button"; b.className="btn sm"; b.textContent="Practise this sentence →";
-      b.onclick=()=>{ showPhrase(i-1); $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); }; el.appendChild(b); };
+    const btn=(label,pick)=>{ const b=document.createElement("button"); b.type="button"; b.className="btn sm"; b.textContent=label;
+      b.onclick=()=>{ showPhrase(pick()); $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); }; el.appendChild(b); };
+    const go=i=>btn("Practise this sentence →", ()=>i-1);
     switch(h.kind){
-      case "scratch": say("Your scratch card is ready — tap the button above to scratch it!"); break;
-      case "start":   say("Next step: score your first sentence to start earning points."); break;
-      case "pb":
-        if(h.phrase_idx){
-          say("Next step: beat your best score on "+h.need+" more sentence"+(h.need>1?"s":"")+". Try this one again — your best is "+Number(h.best).toFixed(1)+":");
-          quote(h.phrase_idx); go(h.phrase_idx);
-        } else say("Next step: read a sentence, then read it again and beat your score.");
-        break;
+      case "scratch":  break;   // the scratch button says it all
+      case "start":    say("Score your first sentence to start earning points."); break;
       case "master":
-        say(h.today ? "Next step: come back tomorrow and score 8+ again on this sentence to master it:"
-                    : "Next step: score 8+ again on this sentence to master it:");
-        quote(h.phrase_idx); if(!h.today) go(h.phrase_idx);
-        break;
-      case "points":  say("Next step: earn "+h.need+" more points — about "+h.sentences+" more sentence"+(h.sentences>1?"s":"")+" at your level. New sentences and beating your best earn the most."); break;
-      case "days":    say("Great work today! Come back tomorrow — each card needs practice on "+h.need+" different days."); break;
-      default:        say("Almost there — keep practising!");
+        say((h.capped?CAPPED:"")+"Score 8+ on this sentence again to master it: +"+h.bonus+" bonus!");
+        quote(h.phrase_idx); go(h.phrase_idx); break;
+      case "pb":
+        say((h.capped?CAPPED+"Beat a personal best to keep going! ":"")+"Your best on this sentence is "+Number(h.best).toFixed(1)+". Every point better earns +"+h.rate+".");
+        quote(h.phrase_idx); go(h.phrase_idx); break;
+      case "tomorrow": say(CAPPED+"Come back tomorrow to keep filling your bar!"); break;
+      default:         say("Read a new sentence to earn points."); btn("Next sentence →", ()=>state.idx+1);
     }
   }
 
-  // "+6 practice · +14 personal best!" under the result, and a new-card alert
+  // one "+16 points" chip under the result, and the gift bar sliding forward
   function showGain(before){
     const g=$("#gainLine"); g.innerHTML=""; g.hidden=true;
     const L=rw && rw.last;
     if(!L || (before && before.last && before.last.attempt_id===L.attempt_id)) return;   // this take wasn't logged
-    const chip=(t,cls)=>{ const s=document.createElement("span"); if(cls) s.className=cls; s.textContent=t; g.appendChild(s); };
-    if(L.practice>0) chip("+"+L.practice+" practice");
-    if(L.pb_points>0) chip("+"+L.pb_points+" personal best!","pb");
-    if(L.mastery_points>0) chip("+"+L.mastery_points+" sentence mastered! 🏆","pb");
-    const P=rw.progress, P0=before && before.progress;
-    if(P && P0 && P.streak>P0.streak) chip("\uD83D\uDD25 "+P.streak+"-day streak!","pb");
+    const add=(t,cls)=>{ const s=document.createElement("span"); if(cls) s.className=cls; s.textContent=t; g.appendChild(s); return s; };
     const total=L.practice+L.pb_points+L.mastery_points;
-    if(total<=0) chip("No new points — only your best 2 tries of each sentence count per day. Try another sentence!","zero");
+    const unlocked = !!rw.pending && (!before || before.pending!==rw.pending);
+    if(total>0){
+      add("+"+total+" points", L.pb_points>0||L.mastery_points>0 ? "pb" : "");
+      const note = L.mastery_points>0 ? "sentence mastered! 🏆" : L.pb_points>0 ? "new best!" : L.capped ? "practice points full for today" : "";
+      if(note) add(note,"note");
+    }
+    else if(L.capped) add(CAPPED+"Beat a personal best to keep going!","zero");
+    else add("No new points — only your best 2 tries of each sentence count per day. Try another sentence!","zero");
+
+    // the bar moves from where it was to where it is now (full when a gift unlocks)
+    if(total>0 && rw.next){
+      const from = before && before.next && !before.pending ? barPct(before.points,before.next) : (unlocked ? 0 : barPct(rw.points,rw.next));
+      const to = unlocked || rw.pending ? 100 : barPct(rw.points,rw.next);
+      const bar=document.createElement("div"); bar.className="rw-bar"; bar.setAttribute("aria-hidden","true");
+      const fill=document.createElement("i"); fill.style.width=from+"%"; bar.appendChild(fill); g.appendChild(bar);
+      if(!rw.pending){   // when a gift is waiting, the scratch button below says it
+        const lab=document.createElement("div"); lab.className="rw-barlab";
+        lab.textContent=morePts(rw.next.need)+" to your next gift"; g.appendChild(lab);
+      }
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ fill.style.width=to+"%"; }));
+    }
     g.hidden=false;
-    if(rw.pending && (!before || before.pending!==rw.pending)){
+    if(unlocked){
       $("#btnResultGift").hidden=false;
-      toast("🎁 You unlocked a scratch card!");
+      toast("🎁 You unlocked a gift!");
       playFanfare();
     } else if(total>0) toast("+"+total+" points");
   }
@@ -1962,8 +1963,8 @@
       if(r.kind==="theme"){
         state.accent=r.key; save(); applyAccent(); syncAccentOptions();
         $("#scNote").textContent="Your app now uses the "+(ACCENTS[r.key]||r.key)+" colour. Change it any time in Settings.";
-      } else if(r.kind==="title") $("#scNote").textContent="Your new title is on your Rewards shelf.";
-      else $("#scNote").textContent="Added to your Rewards shelf. Keep practising for the next card!";
+      } else if(r.kind==="title") $("#scNote").textContent="Your new title is saved in My progress.";
+      else $("#scNote").textContent="Saved in My progress. Keep practising for your next gift!";
     }catch(e){
       $("#scNote").textContent="Couldn't save this right now — your card will still be here to scratch next time.";
     }

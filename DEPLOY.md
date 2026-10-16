@@ -61,27 +61,29 @@ and the toughest phrases. It reads the same MySQL data that `log.php` writes.
 Only you should know the passcode — anyone with it can see the class data.
 
 ## Scratch-card rewards (rewards.php)
-Students earn points for practising and bigger points for improving, and unlock
-scratch cards with in-app rewards (badges, colour themes, a title). It uses the
-same MySQL database - no extra setup; the `rewards` table creates itself.
+Students see one goal: a mystery gift at the top of the app, a bar that fills
+toward it, and one next step. When the bar is full they scratch a card to reveal
+an in-app reward (badges, colour themes, a title). It uses the same MySQL
+database - no extra setup; the `rewards` table creates itself.
 
 - Points: each try earns its score (best 2 tries per sentence per day count, max
-  30 tries a day). Beating your own best earns 10 per point gained; scoring 8+
-  on a sentence on 2 different days masters it (+20).
-- Cards unlock at 100, 250, 450, 700, 1000 points, then every +350 - only after
-  practising on 2 different days AND improving (3 new personal bests, or a
-  mastered sentence, or a higher recent average) since the last card.
-- The app always shows the next reward and the next step toward it.
+  30 tries a day), up to 60 practice points a day. Beating your own best earns
+  10 per point gained; scoring 8+ on a sentence on 2 different days masters it
+  (+20). Improvement points have no daily limit.
+- A card unlocks as soon as the points reach 100, 250, 450, 700, 1000, then
+  every +350. A full bar always means a gift.
+- The gift stays hidden until it is scratched. After each reading the student
+  sees one "+N points" chip and the bar sliding forward.
 - Tune the numbers at the top of `rewards.php` once you have a few weeks of data.
 - Settings > "Preview a scratch card" shows the effect without saving anything.
 
 ## Student progress view
-Signed-in students see a "Your progress" card: their day streak (🔥 badge in the
-top bar too, grey until they practise today), best streak, sentences tried and
-mastered, and a 7-day chart of tries per day (tap a day for its tries and
-average), plus this week's average vs last week. It comes from the same
-`rewards.php` call - nothing to set up. Without the server it falls back to the
-on-phone "Your session" card.
+The "My progress" link under the gift opens the student's day streak, best
+streak, sentences tried and mastered, a 7-day chart of tries per day (tap a day
+for its tries and average), this week's average vs last week, and the gifts
+they have won. It is closed by default so the gift stays the only goal on
+screen. It comes from the same `rewards.php` call - nothing to set up. Without
+the server the app falls back to the on-phone "Your session" card.
 
 ## Indian voice audio (one-time)
 The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
