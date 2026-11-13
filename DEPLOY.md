@@ -85,6 +85,20 @@ they have won. It is closed by default so the gift stays the only goal on
 screen. It comes from the same `rewards.php` call - nothing to set up. Without
 the server the app falls back to the on-phone "Your session" card.
 
+## Keeping AI scoring cheap
+With "Add AI pronunciation scoring" switched on in Settings, each reading is
+still scored on the phone first (free). It goes to AI (Azure/Gemini) only when:
+
+- the phone score is 7 or more: pronunciation feedback on a halting reading is
+  noise, so the student is asked to read it smoothly first; and
+- the student has not already mastered that sentence's pronunciation (8+ on AI
+  twice). Mastered sentences are scored on the phone, free.
+
+If the AI check fails, the student still gets the phone score. To tune: AI_GATE
+in index.html, PC_PRON_MASTER_SCORE / PC_PRON_MASTER_TIMES in rewards.php.
+These checks run in the app, so they save money in normal use but are not a
+hard spending cap.
+
 ## Indian voice audio (one-time)
 The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
 words and the Listen button, falling back to the browser voice if a clip is missing.

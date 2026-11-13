@@ -47,6 +47,8 @@ const PC_PB_RATE         = 10;    // improvement points per 1.0 of score gained
 const PC_MASTERY_SCORE   = 8.0;
 const PC_MASTERY_DAYS    = 2;
 const PC_MASTERY_BONUS   = 20;
+const PC_PRON_MASTER_SCORE = 8.0; // AI pronunciation score that counts toward "pronunciation mastered"
+const PC_PRON_MASTER_TIMES = 2;   // ...this many times; the app then stops sending that sentence to AI
 
 /* ---------------- the in-app reward behind each card ---------------- */
 function pc_reward($n) {
@@ -158,6 +160,17 @@ function pc_progress($c, $today) {
           'total_tries'=>count($c['valid']), 'sentences_tried'=>count($phrases), 'mastered'=>count($c['mastered'])];
 }
 
+/* Sentences whose pronunciation this student has already nailed on AI scoring
+   (8+ twice). The app skips the paid AI check for them. */
+function pc_pron_mastered($pdo, $sid) {
+  if (!$sid) return [];
+  $st = $pdo->prepare("SELECT phrase_idx FROM attempts
+                       WHERE student_id=? AND engine IN ('azure','gemini') AND pronunciation >= ?
+                       GROUP BY phrase_idx HAVING COUNT(*) >= ?");
+  $st->execute([$sid, PC_PRON_MASTER_SCORE, PC_PRON_MASTER_TIMES]);
+  return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
+}
+
 function pc_cards($pdo, $sid) {
   $st = $pdo->prepare("SELECT card_no, unlocked_at, scratched_at FROM rewards WHERE student_id=? ORDER BY card_no");
   $st->execute([$sid]);
@@ -258,6 +271,7 @@ function pc_status($pdo, $sid, $name) {
     'today'=>['practice'=>$practiceToday, 'cap'=>PC_PRACTICE_CAP, 'capped'=>$capped],
     'hint'=>$hint,
     'progress'=>pc_progress($c, $today),
+    'pron_mastered'=>pc_pron_mastered($pdo, $sid),
     'unlocks'=>['themes'=>$themes, 'badges'=>$badges, 'title'=>$title, 'stars'=>$stars],
   ];
 }

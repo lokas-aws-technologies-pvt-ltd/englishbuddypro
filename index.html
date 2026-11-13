@@ -675,7 +675,7 @@
         <input type="checkbox" id="setLive">
         <label for="setLive" style="margin:0;color:var(--ink);font-size:14px">Add AI pronunciation scoring</label>
       </div>
-      <div class="hint">Off (default) = free on-device scoring: pace, pauses and confidence, no internet. On = also grade pronunciation with the engine below.</div>
+      <div class="hint">Off (default) = free on-device scoring: pace, pauses and confidence, no internet. On = also grade pronunciation with the engine below, but only on smooth readings (7+), and not on sentences whose pronunciation you have already mastered. That keeps AI cost low.</div>
     </div>
 
     <div class="field">
@@ -1176,6 +1176,7 @@
   /* ---------------- scoring ---------------- */
   const WEIGHTS={ fluency:.30, flow:.30, pronunciation:.25, completeness:.15 };
   const PAUSE_MS=400;                 // a gap longer than this counts as hesitation
+  const AI_GATE=7;                    // on-device score needed before the paid AI checks pronunciation
   const AZURE_RATE_PER_HOUR=1.30;     // Azure paid S0: STT + pronunciation add-on, per audio hour
   const TARGET_WPM=120;               // a confident, natural reading pace
 
@@ -1184,6 +1185,17 @@
   function costFor(engine, raw){
     if(raw && raw._costUsd!=null) return Number(raw._costUsd);        // real cost from the server
     return (takeDur||0)/3600*AZURE_RATE_PER_HOUR;                     // demo estimate (Azure rate)
+  }
+
+  /* Paid AI runs only when it adds something:
+     - not on a sentence whose pronunciation this student has mastered (8+ on AI twice, from rewards.php)
+     - not on a rough reading: flow comes first, so the phone score must reach AI_GATE.
+     Without rewards data (offline, not signed in) nothing counts as mastered, so AI still runs. */
+  function aiGate(local){
+    const mastered = rw && Array.isArray(rw.pron_mastered) && rw.pron_mastered.includes(state.idx+1);
+    if(mastered) return { ok:false, why:"mastered" };
+    if(local.overall < AI_GATE) return { ok:false, why:"rough", score:local.overall };
+    return { ok:true };
   }
 
   /* Phase 1 — send one finished attempt to log.php so teachers can see progress.
@@ -1224,12 +1236,26 @@
     if(!takeBlob){ toast("Record your reading first."); return; }
     btnScore.disabled=true; btnScore.textContent="Scoring…"; hideScoreError();
     try{
-      const engine = state.live ? state.engine : "local";
-      const raw = state.live ? await scoreLive(takeBlob, current.t, state.lang, engine) : null;
-      const result = normalize(raw, current.t, takeAcoustics, takeDur, state.live?"live":"local");
-      const cost = state.live ? costFor(engine, raw) : null;
+      // 1. always score on the phone first: instant and free
+      const local = normalize(null, current.t, takeAcoustics, takeDur, "local");
+      let engine="local", result=local, cost=null, gate=null;
+      // 2. with AI switched on, send it to AI only when that adds something
+      if(state.live){
+        gate = aiGate(local);
+        if(gate.ok){
+          btnScore.textContent="Smooth reading! Checking pronunciation…";
+          try{
+            const raw = await scoreLive(takeBlob, current.t, state.lang, state.engine);
+            result = normalize(raw, current.t, takeAcoustics, takeDur, "live");
+            engine = state.engine; cost = costFor(engine, raw);
+          }catch(aiErr){   // AI failed: keep the phone score, and say why
+            gate = { ok:false, why:"failed" };
+            showScoreError((aiErr && aiErr.message) ? aiErr.message : String(aiErr));
+          }
+        }
+      }
       takeResults[engine] = { overall:result.overall, cost:cost||0 };
-      renderResult(result, engine, cost);
+      renderResult(result, engine, cost, gate);
       const logged = logAttempt(result, engine);   // record for teacher progress (quiet, non-blocking)
       if(logged) logged.then(ok=>{ if(ok) refreshRewards(true); });   // then show points earned / new card
     }catch(e){
@@ -1454,16 +1480,23 @@
   function band(v){ return v>=7.5?"good":v>=5?"warn":"crit"; }
   function bandColorVar(v){ return v>=7.5?"--good":v>=5?"--warn":"--crit"; }
 
-  function renderResult(r, engine, cost){
+  function renderResult(r, engine, cost, gate){
     $("#gainLine").hidden=true; $("#btnResultGift").hidden=true;
     engine = engine || (r.mode==="live" ? "azure" : "local");
     const localMode = (engine==="local");
 
     // mode note
     const note=$("#modeNote"); note.hidden=false;
-    note.innerHTML = localMode
-      ? '<b>On-device scoring.</b> Pace, pauses and confidence, measured on your phone — no internet, no cost. Turn on AI scoring in Settings to also grade pronunciation.'
-      : '<b>AI scoring (' + ({azure:"Azure",gemini:"Gemini"}[engine]||engine) + ').</b> Adds pronunciation and completeness on top of the on-device pace and pauses.';
+    const why = gate && !gate.ok ? gate.why : null;
+    note.innerHTML = !localMode
+      ? '<b>Smooth reading &mdash; pronunciation checked (' + ({azure:"Azure",gemini:"Gemini"}[engine]||engine) + ').</b> Adds pronunciation and completeness on top of the on-device pace and pauses.'
+      : why==="rough"
+      ? '<b>On-device scoring.</b> &#127908; Read it smoothly (' + AI_GATE + '+) to unlock the pronunciation check. This reading: ' + r.overall.toFixed(1) + '.'
+      : why==="mastered"
+      ? '<b>&#10003; Pronunciation mastered.</b> You have already nailed the pronunciation of this sentence, so this reading was scored on your phone, free.'
+      : why==="failed"
+      ? '<b>On-device scoring.</b> The pronunciation check could not run this time (see the red box), so here is your score from the phone.'
+      : '<b>On-device scoring.</b> Pace, pauses and confidence, measured on your phone — no internet, no cost. Turn on AI scoring in Settings to also grade pronunciation.';
 
     // big overall speedometer
     const big=$("#gaugeBig"); big.innerHTML=""; big.appendChild(buildGauge(r.overall,{big:true}));
