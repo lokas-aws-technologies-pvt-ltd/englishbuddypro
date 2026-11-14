@@ -1,6 +1,6 @@
 <?php
 /**
- * Phrase Coach - scratch-card rewards (in-app rewards only).
+ * English Buddy - scratch-card rewards (in-app rewards only).
  * ---------------------------------------------------------------------------
  * POST JSON  { class_code, roll_no, action: "status" | "scratch", card_no? }
  * The status also carries the student's own progress (streak, last 7 days).

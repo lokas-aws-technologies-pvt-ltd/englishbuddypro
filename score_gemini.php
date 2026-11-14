@@ -1,6 +1,6 @@
 <?php
 /**
- * Phrase Coach — score_gemini.php   (A/B alternative to score.php)
+ * English Buddy — score_gemini.php   (A/B alternative to score.php)
  * -------------------------------------------------------------------------
  * Same job, same response shape as the Azure endpoint, but scored by
  * Google Gemini (Flash-Lite by default). The page can call either one, so

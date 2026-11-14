@@ -1,6 +1,6 @@
 <?php
 /**
- * Phrase Coach - Teacher dashboard (Phase 1, read side).
+ * English Buddy - Teacher dashboard (Phase 1, read side).
  * ---------------------------------------------------------------------------
  * A single, self-contained page. It reads the attempts logged by log.php and
  * shows class progress: who is practising, how confidence is trending, the
@@ -189,11 +189,11 @@ CSS;
    LOGIN SCREEN
    ========================================================================= */
 if (!$authed) {
-  pc_head('Teacher Dashboard - Phrase Coach');
+  pc_head('Teacher Dashboard - English Buddy');
   ?>
   <div class="wrap">
     <div class="login card">
-      <div class="brand" style="margin-bottom:4px"><h1>Phrase&nbsp;Coach</h1></div>
+      <div class="brand" style="margin-bottom:4px"><h1>English&nbsp;Buddy</h1></div>
       <div class="tag" style="font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">Teacher dashboard</div>
       <?php if ($TEACHER_KEY === ''): ?>
         <p class="err" style="margin-top:18px">No teacher passcode is set. Add <code>$TEACHER_KEY = '...';</code> to <code>config.php</code> on the server, then reload.</p>
@@ -386,11 +386,11 @@ try {
   $dberr = $e->getMessage();
 }
 
-pc_head('Teacher Dashboard - Phrase Coach');
+pc_head('Teacher Dashboard - English Buddy');
 ?>
 <div class="wrap">
   <div class="top">
-    <div class="brand"><h1>Phrase&nbsp;Coach</h1><span class="tag">Teacher dashboard</span></div>
+    <div class="brand"><h1>English&nbsp;Buddy</h1><span class="tag">Teacher dashboard</span></div>
     <span class="sp"></span>
     <button class="iconbtn" id="btnTheme" type="button" title="Theme">◐ Theme</button>
     <a class="iconbtn" href="teacher.php" title="Refresh">↻ Refresh</a>
@@ -421,7 +421,7 @@ pc_head('Teacher Dashboard - Phrase Coach');
 window.PC_DATA = <?= json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
 </script>
 <script>
-/* ============ Phrase Coach teacher dashboard - client render ============ */
+/* ============ English Buddy teacher dashboard - client render ============ */
 (function(){
   "use strict";
   var D = window.PC_DATA || {};

@@ -1,6 +1,6 @@
 <?php
 /**
- * Phrase Coach - one-time audio generator (Indian English, Azure Neerja voice).
+ * English Buddy - one-time audio generator (Indian English, Azure Neerja voice).
  * -------------------------------------------------------------------------
  * Run ONCE from a browser:
  *     https://your-site/englishbuddypro/generate_audio.php?key=YOUR_SECRET

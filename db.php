@@ -1,6 +1,6 @@
 <?php
 /**
- * Phrase Coach - database helper (Phase 1).
+ * English Buddy - database helper (Phase 1).
  * Reads DB credentials from config.php and creates the tables if missing.
  *
  * In config.php add:

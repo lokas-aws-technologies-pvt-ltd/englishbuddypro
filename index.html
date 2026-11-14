@@ -12,7 +12,7 @@
   [hidden]{display:none!important;}
   :root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);}
 </style>
-<title>Phrase Coach</title>
+<title>English Buddy</title>
 <style>
   :root{
     /* light palette: iGiver brand (logo orange #FF9035, black, white) */
@@ -473,7 +473,7 @@
 
   <div class="top">
     <div class="brand">
-      <h1>Phrase&nbsp;Coach</h1>
+      <h1>English&nbsp;Buddy</h1>
       <span class="tag">read · speak · score</span>
     </div>
     <span class="sp"></span>
@@ -482,42 +482,6 @@
   </div>
 
   <div class="stack">
-
-    <!-- ============ NEXT GIFT: the one goal ============ -->
-    <section class="card" id="rewardsCard" hidden aria-live="polite">
-      <div class="rw-next">
-        <div class="rw-icon" id="rwBox" aria-hidden="true">&#127873;<span class="q">?</span></div>
-        <div style="min-width:0">
-          <div class="rw-lil">Next gift</div>
-          <div class="rw-name" id="rwNeed">&nbsp;</div>
-        </div>
-      </div>
-      <div class="rw-bar" role="progressbar" aria-label="Points toward your next gift" id="rwBar" aria-valuemin="0" aria-valuemax="100"><i id="rwBarFill"></i></div>
-      <div class="rw-barlab"><span id="rwBarLab"></span></div>
-      <button class="btn accent rw-gift" id="rwGift" type="button" hidden>&#127873; Tap to scratch your gift</button>
-      <div class="rw-hint" id="rwHint"></div>
-      <button class="rw-more" id="btnMyProgress" type="button" aria-expanded="false" aria-controls="progressCard">My progress</button>
-    </section>
-
-    <!-- ============ MY PROGRESS (opened from the gift card) ============ -->
-    <section class="card" id="progressCard" hidden>
-      <div class="eyebrow"><span>My progress</span><span class="rw-pts" id="pgBest"></span></div>
-      <div class="pg-top">
-        <div class="pg-tile streak">
-          <span class="pg-flame" id="pgFlame" aria-hidden="true">&#128293;</span>
-          <div><div class="pg-num" id="pgStreak">0</div><div class="pg-lab">day streak</div></div>
-        </div>
-        <div class="pg-tile"><div class="pg-num" id="pgTried">0</div><div class="pg-lab" id="pgTriedLab">sentences tried</div></div>
-        <div class="pg-tile"><div class="pg-num" id="pgMastered">0</div><div class="pg-lab">mastered</div></div>
-      </div>
-      <div class="pg-msg" id="pgMsg"></div>
-      <div class="section-t" style="margin:18px 0 10px">Your last 7 days &middot; tries per day</div>
-      <div class="pg-week" id="pgWeek"></div>
-      <div class="pg-cap" id="pgCap" aria-live="polite"></div>
-      <div class="pg-sum" id="pgSum"></div>
-      <div class="section-t" style="margin:18px 0 10px">Your gifts &middot; <span id="rwPoints">0 points</span></div>
-      <div class="rw-shelf" id="rwShelf"></div>
-    </section>
 
     <!-- ============ PRACTICE CARD ============ -->
     <section class="card" id="practice">
@@ -639,6 +603,42 @@
       </div>
     </section>
 
+    <!-- ============ NEXT GIFT: the one goal ============ -->
+    <section class="card" id="rewardsCard" hidden aria-live="polite">
+      <div class="rw-next">
+        <div class="rw-icon" id="rwBox" aria-hidden="true">&#127873;<span class="q">?</span></div>
+        <div style="min-width:0">
+          <div class="rw-lil">Next gift</div>
+          <div class="rw-name" id="rwNeed">&nbsp;</div>
+        </div>
+      </div>
+      <div class="rw-bar" role="progressbar" aria-label="Points toward your next gift" id="rwBar" aria-valuemin="0" aria-valuemax="100"><i id="rwBarFill"></i></div>
+      <div class="rw-barlab"><span id="rwBarLab"></span></div>
+      <button class="btn accent rw-gift" id="rwGift" type="button" hidden>&#127873; Tap to scratch your gift</button>
+      <div class="rw-hint" id="rwHint"></div>
+      <button class="rw-more" id="btnMyProgress" type="button" aria-expanded="false" aria-controls="progressCard">My progress</button>
+    </section>
+
+    <!-- ============ MY PROGRESS (opened from the gift card) ============ -->
+    <section class="card" id="progressCard" hidden>
+      <div class="eyebrow"><span>My progress</span><span class="rw-pts" id="pgBest"></span></div>
+      <div class="pg-top">
+        <div class="pg-tile streak">
+          <span class="pg-flame" id="pgFlame" aria-hidden="true">&#128293;</span>
+          <div><div class="pg-num" id="pgStreak">0</div><div class="pg-lab">day streak</div></div>
+        </div>
+        <div class="pg-tile"><div class="pg-num" id="pgTried">0</div><div class="pg-lab" id="pgTriedLab">sentences tried</div></div>
+        <div class="pg-tile"><div class="pg-num" id="pgMastered">0</div><div class="pg-lab">mastered</div></div>
+      </div>
+      <div class="pg-msg" id="pgMsg"></div>
+      <div class="section-t" style="margin:18px 0 10px">Your last 7 days &middot; tries per day</div>
+      <div class="pg-week" id="pgWeek"></div>
+      <div class="pg-cap" id="pgCap" aria-live="polite"></div>
+      <div class="pg-sum" id="pgSum"></div>
+      <div class="section-t" style="margin:18px 0 10px">Your gifts &middot; <span id="rwPoints">0 points</span></div>
+      <div class="rw-shelf" id="rwShelf"></div>
+    </section>
+
     <!-- ============ SESSION (shown when the server progress isn't available) ============ -->
     <section class="card" id="sessionCard">
       <div class="eyebrow" style="margin-bottom:12px">Your session</div>
@@ -673,7 +673,7 @@
   <div class="dlg-body">
     <div class="dlg-brand">
       <img src="img/igiver-logo.png" alt="iGiver" width="44" height="44">
-      <div><h3>Settings</h3><div class="by">Phrase Coach by iGiver.org</div></div>
+      <div><h3>Settings</h3><div class="by">English Buddy by iGiver.org</div></div>
     </div>
     <p class="sub-note">Every reading is scored on your phone. Smooth readings (7+) also get a pronunciation check by Google AI. Language: English (India).</p>
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Phrase Coach — /api/score
+ * English Buddy — /api/score
  * -------------------------------------------------------------------------
  * Runs on GoDaddy Linux / cPanel hosting (PHP 7.4+). Same domain as the
  * HTML page, so there is no CORS to configure.

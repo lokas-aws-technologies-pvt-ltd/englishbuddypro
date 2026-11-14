@@ -1,6 +1,6 @@
 # English Buddy Pro
 
-Read-aloud English practice web app (Phrase Coach). Static page + PHP scoring
+Read-aloud English practice web app (English Buddy). Static page + PHP scoring
 endpoints, deployed to GoDaddy via cPanel Git Version Control.
 
 ## Files

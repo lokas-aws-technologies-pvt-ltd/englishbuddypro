@@ -1,6 +1,6 @@
 <?php
 /**
- * Phrase Coach - log one practice attempt (Phase 1).
+ * English Buddy - log one practice attempt (Phase 1).
  * The app POSTs a small JSON body after each real scored attempt.
  * Same domain as the page, so no CORS. Fails quietly if the DB isn't set up
  * (the app ignores the response, so practice is never blocked).
