@@ -19,3 +19,4 @@ deployment:
     - /bin/cp -f config.sample.php $DEPLOYPATH
     - /bin/cp -f generate_audio.php $DEPLOYPATH
     - /bin/cp -rf audio $DEPLOYPATH
+    - /bin/cp -rf img $DEPLOYPATH
