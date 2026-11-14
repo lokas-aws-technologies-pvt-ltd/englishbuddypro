@@ -47,18 +47,28 @@ the app simply doesn't log (practice and scoring still work).
 4. Students sign in once (class code + roll number) in the app; a "Change"
    button in Settings lets them switch. No passwords are stored.
 
-## Teacher dashboard (teacher.php)
-A read-only page showing class progress: confidence trend, practice volume, a
-student roster with streaks and score sparklines, the most-missed "focus words",
-and the toughest phrases. It reads the same MySQL data that `log.php` writes.
+## Backend (admin.php): logins, overview, students
+Open `https://training.igiver.org/englishbuddypro/admin.php`.
 
-1. Set the MySQL credentials above (the dashboard needs them).
-2. In `config.php` set `$TEACHER_KEY` to a long, private passcode.
-3. Open `https://training.igiver.org/englishbuddypro/teacher.php`, enter the
-   passcode once (it's held in a session cookie, never in the URL). Use **Sign out**
-   to end the session; **Refresh** reloads the latest numbers.
+1. **First time:** create the admin account. It asks for the setup passcode,
+   which is `$TEACHER_KEY` in `config.php`, so only someone with server access
+   can become admin. Choose your own username and password.
+2. **Students:** add students one at a time, or paste / upload a whole class
+   (one per line: roll number, then name). Edit (history moves with the
+   student), reset progress, or delete.
+3. **Logins:** create a login per teacher and give it class codes. A teacher
+   sees and manages only those classes. The password is shown once; they can
+   change it under My account. Admins can reset passwords.
+4. **Overview:** class progress (the old teacher dashboard), limited to the
+   classes the signed-in person may see, with a class filter.
 
-Only you should know the passcode — anyone with it can see the class data.
+**Roster-only sign-in (ON by default):** a student can sign in only if they
+are on the Students list. Students who already practised are on it
+automatically; new students must be added first. Admins can switch it off on
+the Students page. Students who were removed are asked to sign in again.
+
+The old shared teacher passcode no longer opens the dashboard; `teacher.php`
+now needs a login.
 
 ## Scratch-card rewards (rewards.php)
 Students see one goal: a mystery gift at the top of the app, a bar that fills

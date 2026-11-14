@@ -14,6 +14,11 @@ deployment:
     - /bin/cp -f db.php $DEPLOYPATH
     - /bin/cp -f log.php $DEPLOYPATH
     - /bin/cp -f teacher.php $DEPLOYPATH
+    - /bin/cp -f admin.php $DEPLOYPATH
+    - /bin/cp -f admin_lib.php $DEPLOYPATH
+    - /bin/cp -f admin_students.php $DEPLOYPATH
+    - /bin/cp -f admin_users.php $DEPLOYPATH
+    - /bin/cp -f signin.php $DEPLOYPATH
     - /bin/cp -f rewards.php $DEPLOYPATH
     - /bin/cp -f .htaccess $DEPLOYPATH
     - /bin/cp -f config.sample.php $DEPLOYPATH

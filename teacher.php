@@ -1,222 +1,18 @@
 <?php
 /**
- * English Buddy - Teacher dashboard (Phase 1, read side).
+ * English Buddy - backend Overview (class progress).
  * ---------------------------------------------------------------------------
- * A single, self-contained page. It reads the attempts logged by log.php and
- * shows class progress: who is practising, how confidence is trending, the
- * words the class struggles with, and the toughest phrases.
- *
- * ACCESS: protected by a passcode. In config.php add:
- *     $TEACHER_KEY = 'a-long-teacher-passcode';
- * The teacher enters it once; it is kept in a server session cookie (not the
- * URL). Open:  https://your-site/englishbuddypro/teacher.php
- *
- * No student data leaves your server; everything is read straight from MySQL.
+ * Reads the attempts logged by log.php and shows progress: who is practising,
+ * how confidence is trending, the words the class struggles with, and the
+ * toughest phrases. Admins see every class; a teacher sees only their classes.
+ * Sign in at admin.php.
  * ---------------------------------------------------------------------------
  */
-
-session_start();
-
-$TEACHER_KEY = '';
-if (is_file(__DIR__ . '/config.php')) require __DIR__ . '/config.php';
-
-// ---- logout ----
-if (isset($_GET['logout'])) {
-  $_SESSION = [];
-  session_destroy();
-  header('Location: teacher.php');
-  exit;
-}
-
-// ---- login (POST the passcode, then redirect so it never sits in the URL) ----
-$loginError = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['key'])) {
-  if ($TEACHER_KEY !== '' && hash_equals($TEACHER_KEY, (string)$_POST['key'])) {
-    $_SESSION['pc_teacher'] = true;
-    header('Location: teacher.php');
-    exit;
-  }
-  $loginError = 'That passcode did not match. Try again.';
-}
-
-$authed = !empty($_SESSION['pc_teacher']);
+require __DIR__ . '/admin_lib.php';
+$me = pc_require_login();
 
 /* =========================================================================
-   Shared page chrome (used by both the login screen and the dashboard).
-   ========================================================================= */
-function pc_head($title) {
-  echo "<!doctype html>\n<html lang=\"en\">\n<head>\n";
-  echo "<meta charset=\"utf-8\">\n";
-  echo "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n";
-  echo "<meta name=\"theme-color\" content=\"#0f766e\">\n";
-  echo "<title>" . htmlspecialchars($title) . "</title>\n";
-  echo <<<CSS
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Schibsted+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ground:#f5f2ec; --surface:#ffffff; --surface-2:#efeae1;
-    --ink:#1b2a29; --muted:#5f6f6c; --dim:#8a9793;
-    --line:#e2dcd1; --line-soft:#ece7dd;
-    --accent:#0f766e; --accent-ink:#ffffff; --accent-soft:#d7ece8;
-    --good:#2f9e6f; --warn:#c9820a; --crit:#cf4b34;
-    --good-soft:#dcefe4; --warn-soft:#f6ecd4; --crit-soft:#f6ded7;
-    --display:"Fraunces", Georgia, serif;
-    --ui:"Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
-    --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
-    --r:14px; --r-sm:9px; --gutter:clamp(16px,4vw,26px); --maxw:880px;
-  }
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-    --ground:#0e1518; --surface:#16211f; --surface-2:#1d2a28;
-    --ink:#e9efec; --muted:#9db0aa; --dim:#6c807b;
-    --line:#263432; --line-soft:#1f2b29;
-    --accent:#4fd1b8; --accent-ink:#06201c; --accent-soft:#123330;
-    --good:#4fd18c; --warn:#e6b24d; --crit:#f0836b;
-    --good-soft:#123528; --warn-soft:#33290f; --crit-soft:#3a1f18;
-  }}
-  :root[data-theme="dark"]{
-    --ground:#0e1518; --surface:#16211f; --surface-2:#1d2a28;
-    --ink:#e9efec; --muted:#9db0aa; --dim:#6c807b;
-    --line:#263432; --line-soft:#1f2b29;
-    --accent:#4fd1b8; --accent-ink:#06201c; --accent-soft:#123330;
-    --good:#4fd18c; --warn:#e6b24d; --crit:#f0836b;
-    --good-soft:#123528; --warn-soft:#33290f; --crit-soft:#3a1f18;
-  }
-  *{ box-sizing:border-box; }
-  html,body{ margin:0; background:var(--ground); color:var(--ink); }
-  body{ font-family:var(--ui); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; }
-  .wrap{ max-width:var(--maxw); margin:0 auto; padding:18px var(--gutter) 46px; }
-  h1,h2,h3{ margin:0; }
-  a{ color:var(--accent); }
-  button{ font-family:var(--ui); cursor:pointer; }
-  button:focus-visible, input:focus-visible, select:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
-
-  .top{ display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
-  .brand{ display:flex; align-items:baseline; gap:10px; min-width:0; }
-  .brand h1{ font-family:var(--display); font-weight:600; font-size:23px; letter-spacing:-.01em; }
-  .brand .tag{ font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); white-space:nowrap; }
-  .top .sp{ flex:1 1 auto; }
-  .iconbtn{ background:var(--surface); border:1px solid var(--line); color:var(--muted); border-radius:999px; padding:7px 12px; font-size:12.5px; line-height:1; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
-  .iconbtn:hover{ border-color:var(--accent); color:var(--ink); }
-
-  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px; }
-  .stack{ display:grid; gap:16px; }
-  .eyebrow{ font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .section-t{ font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:2px 0 12px; }
-
-  /* hero + KPI tiles */
-  .heroRow{ display:flex; gap:18px; align-items:stretch; flex-wrap:wrap; }
-  .hero{ flex:1 1 190px; display:flex; flex-direction:column; justify-content:center; }
-  .hero .hlabel{ font-size:12.5px; color:var(--muted); }
-  .hero .hval{ font-family:var(--ui); font-weight:600; font-size:52px; line-height:1; letter-spacing:-.02em; margin:4px 0 2px; }
-  .hero .hden{ font-family:var(--mono); font-size:13px; color:var(--muted); }
-  .hero .delta{ font-family:var(--mono); font-size:12.5px; margin-top:8px; display:inline-flex; align-items:center; gap:6px; }
-  .delta.up{ color:var(--good); } .delta.down{ color:var(--crit); } .delta.flat{ color:var(--muted); }
-  .tiles{ flex:2 1 320px; display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .tile{ border:1px solid var(--line-soft); border-radius:var(--r-sm); background:var(--ground); padding:12px 13px; }
-  .tile .tval{ font-family:var(--ui); font-weight:600; font-size:26px; line-height:1; }
-  .tile .tlabel{ font-size:11.5px; color:var(--muted); margin-top:5px; }
-
-  /* charts */
-  .chart-card svg{ display:block; width:100%; height:auto; overflow:visible; }
-  .axis{ stroke:var(--line); stroke-width:1; }
-  .grid{ stroke:var(--line-soft); stroke-width:1; }
-  .axtick{ font-family:var(--mono); font-size:9px; fill:var(--dim); }
-  .axlab{ font-family:var(--mono); font-size:9px; fill:var(--dim); }
-  .lineseries{ fill:none; stroke:var(--accent); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
-  .dot{ fill:var(--accent); stroke:var(--surface); stroke-width:2; }
-  .col{ fill:var(--accent); }
-  .endlab{ font-family:var(--ui); font-weight:600; font-size:11px; fill:var(--ink); }
-
-  /* roster */
-  .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
-  .toolbar select{ padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--ground); color:var(--ink); font-family:var(--mono); font-size:12px; }
-  table.roster{ width:100%; border-collapse:collapse; font-size:13.5px; }
-  table.roster th{ text-align:left; font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:500; padding:0 8px 9px; border-bottom:1px solid var(--line); white-space:nowrap; }
-  table.roster th.num, table.roster td.num{ text-align:right; }
-  table.roster td{ padding:11px 8px; border-bottom:1px solid var(--line-soft); vertical-align:middle; }
-  table.roster tr:last-child td{ border-bottom:0; }
-  .who .nm{ font-weight:600; color:var(--ink); }
-  .who .sub{ font-family:var(--mono); font-size:10.5px; color:var(--dim); margin-top:2px; }
-  .scorepill{ font-family:var(--mono); font-weight:500; font-variant-numeric:tabular-nums; padding:3px 8px; border-radius:999px; font-size:12.5px; display:inline-block; min-width:34px; text-align:center; }
-  .sc-good{ color:var(--good); background:var(--good-soft); } .sc-warn{ color:var(--warn); background:var(--warn-soft); } .sc-crit{ color:var(--crit); background:var(--crit-soft); } .sc-none{ color:var(--dim); background:var(--surface-2); }
-  .streak{ font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
-  .streak b{ color:var(--ink); }
-  .last{ font-family:var(--mono); font-size:11.5px; color:var(--muted); white-space:nowrap; }
-  .spark{ display:block; width:96px; height:26px; }
-  .num{ font-variant-numeric:tabular-nums; }
-
-  /* word + phrase bars */
-  .bars{ display:grid; gap:9px; }
-  .barrow{ display:grid; grid-template-columns: 120px 1fr auto; align-items:center; gap:10px; }
-  .barrow .k{ font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .barrow .k.wide{ }
-  .track{ height:9px; border-radius:5px; background:var(--surface-2); overflow:hidden; }
-  .track > i{ display:block; height:100%; border-radius:5px; background:var(--accent); }
-  .track > i.good{ background:var(--good); } .track > i.warn{ background:var(--warn); } .track > i.crit{ background:var(--crit); }
-  .barrow .v{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:12px; color:var(--muted); min-width:30px; text-align:right; }
-  .phraserow{ display:grid; grid-template-columns: 1fr auto; gap:4px 12px; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--line-soft); }
-  .phraserow:last-child{ border-bottom:0; }
-  .phraserow .pt{ font-family:var(--display); font-size:15px; color:var(--ink); }
-  .phraserow .pm{ display:flex; align-items:center; gap:10px; }
-  .phraserow .track{ width:90px; }
-
-  .empty{ text-align:center; color:var(--muted); padding:26px 10px; }
-  .empty h3{ font-family:var(--display); font-weight:600; font-size:19px; color:var(--ink); margin-bottom:8px; }
-  .hint{ font-size:12px; color:var(--dim); }
-  .footnote{ font-size:11.5px; color:var(--dim); text-align:center; margin-top:24px; line-height:1.6; }
-  .tt{ position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--ground); font-family:var(--mono); font-size:11px; padding:6px 8px; border-radius:6px; opacity:0; transition:opacity .1s; white-space:nowrap; }
-
-  /* login */
-  .login{ max-width:380px; margin:14vh auto 0; }
-  .login .field{ margin:16px 0; }
-  .login label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-  .login input{ width:100%; padding:11px 12px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--ground); color:var(--ink); font-family:var(--mono); font-size:14px; }
-  .login .err{ color:var(--crit); font-size:12.5px; margin-top:8px; }
-  .btn{ border-radius:var(--r-sm); font-size:14px; font-weight:600; padding:11px 15px; border:1px solid var(--accent); background:var(--accent); color:var(--accent-ink); width:100%; }
-  @media (max-width:560px){
-    .tiles{ grid-template-columns:repeat(2,1fr); }
-    table.roster .colWpm, table.roster .hideS{ display:none; }
-    .barrow{ grid-template-columns: 96px 1fr auto; }
-  }
-</style>
-CSS;
-  echo "</head>\n<body>\n";
-}
-
-/* =========================================================================
-   LOGIN SCREEN
-   ========================================================================= */
-if (!$authed) {
-  pc_head('Teacher Dashboard - English Buddy');
-  ?>
-  <div class="wrap">
-    <div class="login card">
-      <div class="brand" style="margin-bottom:4px"><h1>English&nbsp;Buddy</h1></div>
-      <div class="tag" style="font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">Teacher dashboard</div>
-      <?php if ($TEACHER_KEY === ''): ?>
-        <p class="err" style="margin-top:18px">No teacher passcode is set. Add <code>$TEACHER_KEY = '...';</code> to <code>config.php</code> on the server, then reload.</p>
-      <?php else: ?>
-        <form method="post" autocomplete="off">
-          <div class="field">
-            <label for="key">Passcode</label>
-            <input type="password" id="key" name="key" autofocus>
-          </div>
-          <?php if ($loginError): ?><div class="err"><?= htmlspecialchars($loginError) ?></div><?php endif; ?>
-          <div class="field"><button class="btn" type="submit">Open dashboard</button></div>
-        </form>
-        <p class="hint">Only you should know this passcode. It is set on the server, not stored with any student.</p>
-      <?php endif; ?>
-    </div>
-  </div>
-  </body></html>
-  <?php
-  exit;
-}
-
-/* =========================================================================
-   AUTHED: gather the data
+   Gather the data (limited to the classes this user may see)
    ========================================================================= */
 
 // Phrase text by 1-based index. MUST stay in the same order as index.html's
@@ -268,14 +64,21 @@ $data = [
 ];
 
 try {
-  require __DIR__ . '/db.php';
-  $pdo = pc_pdo();
+  $pdo = pc_db();
 
-  $students = $pdo->query("SELECT id, class_code, roll_no, name FROM students")->fetchAll();
-  $rows = $pdo->query(
-    "SELECT student_id, overall, phrase_idx, filler_count, mispronounced, skipped, created_at
-     FROM attempts ORDER BY created_at DESC LIMIT 8000"
-  )->fetchAll();
+  [$cw, $cp] = pc_class_where($me, 's');
+  $classOptions = pc_class_options($me);
+  $pick = trim((string)($_GET['class'] ?? ''));
+  if ($pick !== '' && pc_class_ok($me, $pick)) { $cw .= ' AND s.class_code = ?'; $cp[] = $pick; } else { $pick = ''; }
+  $st = $pdo->prepare("SELECT s.id, s.class_code, s.roll_no, s.name FROM students s WHERE $cw");
+  $st->execute($cp);
+  $students = $st->fetchAll();
+  $st = $pdo->prepare(
+    "SELECT a.student_id, a.overall, a.phrase_idx, a.filler_count, a.mispronounced, a.skipped, a.created_at
+     FROM attempts a JOIN students s ON s.id = a.student_id
+     WHERE $cw ORDER BY a.created_at DESC LIMIT 8000");
+  $st->execute($cp);
+  $rows = $st->fetchAll();
   $rows = array_reverse($rows); // chronological
 
   $today   = date('Y-m-d');
@@ -386,16 +189,90 @@ try {
   $dberr = $e->getMessage();
 }
 
-pc_head('Teacher Dashboard - English Buddy');
+$classOptions = $classOptions ?? [];
+pc_page_start('Overview', 'overview', $me);
 ?>
-<div class="wrap">
-  <div class="top">
-    <div class="brand"><h1>English&nbsp;Buddy</h1><span class="tag">Teacher dashboard</span></div>
-    <span class="sp"></span>
-    <button class="iconbtn" id="btnTheme" type="button" title="Theme">◐ Theme</button>
-    <a class="iconbtn" href="teacher.php" title="Refresh">↻ Refresh</a>
-    <a class="iconbtn" href="teacher.php?logout=1" title="Sign out">Sign out</a>
+<style>
+  /* hero + KPI tiles */
+  .heroRow{ display:flex; gap:18px; align-items:stretch; flex-wrap:wrap; }
+  .hero{ flex:1 1 190px; display:flex; flex-direction:column; justify-content:center; }
+  .hero .hlabel{ font-size:12.5px; color:var(--muted); }
+  .hero .hval{ font-family:var(--ui); font-weight:600; font-size:52px; line-height:1; letter-spacing:-.02em; margin:4px 0 2px; }
+  .hero .hden{ font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .hero .delta{ font-family:var(--mono); font-size:12.5px; margin-top:8px; display:inline-flex; align-items:center; gap:6px; }
+  .delta.up{ color:var(--good); } .delta.down{ color:var(--crit); } .delta.flat{ color:var(--muted); }
+  .tiles{ flex:2 1 320px; display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .tile{ border:1px solid var(--line-soft); border-radius:var(--r-sm); background:var(--ground); padding:12px 13px; }
+  .tile .tval{ font-family:var(--ui); font-weight:600; font-size:26px; line-height:1; }
+  .tile .tlabel{ font-size:11.5px; color:var(--muted); margin-top:5px; }
+
+  /* charts */
+  .chart-card svg{ display:block; width:100%; height:auto; overflow:visible; }
+  #dash .card > svg{ display:block; width:100%; max-width:100%; height:auto; overflow:visible; }   /* charts shrink to the phone width */
+  .axis{ stroke:var(--line); stroke-width:1; }
+  .grid{ stroke:var(--line-soft); stroke-width:1; }
+  .axtick{ font-family:var(--mono); font-size:9px; fill:var(--dim); }
+  .axlab{ font-family:var(--mono); font-size:9px; fill:var(--dim); }
+  .lineseries{ fill:none; stroke:var(--accent); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
+  .dot{ fill:var(--accent); stroke:var(--surface); stroke-width:2; }
+  .col{ fill:var(--accent); }
+  .endlab{ font-family:var(--ui); font-weight:600; font-size:11px; fill:var(--ink); }
+
+  /* roster */
+  .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+  .toolbar select{ padding:8px 10px; border-radius:var(--r-sm); border:1px solid var(--line); background:var(--ground); color:var(--ink); font-family:var(--mono); font-size:12px; }
+  table.roster{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.roster th{ text-align:left; font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:500; padding:0 8px 9px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  table.roster th.num, table.roster td.num{ text-align:right; }
+  table.roster td{ padding:11px 8px; border-bottom:1px solid var(--line-soft); vertical-align:middle; }
+  table.roster tr:last-child td{ border-bottom:0; }
+  .who .nm{ font-weight:600; color:var(--ink); }
+  .who .sub{ font-family:var(--mono); font-size:10.5px; color:var(--dim); margin-top:2px; }
+  .scorepill{ font-family:var(--mono); font-weight:500; font-variant-numeric:tabular-nums; padding:3px 8px; border-radius:999px; font-size:12.5px; display:inline-block; min-width:34px; text-align:center; }
+  .sc-good{ color:var(--good); background:var(--good-soft); } .sc-warn{ color:var(--warn); background:var(--warn-soft); } .sc-crit{ color:var(--crit); background:var(--crit-soft); } .sc-none{ color:var(--dim); background:var(--surface-2); }
+  .streak{ font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
+  .streak b{ color:var(--ink); }
+  .last{ font-family:var(--mono); font-size:11.5px; color:var(--muted); white-space:nowrap; }
+  .spark{ display:block; width:96px; height:26px; }
+  .num{ font-variant-numeric:tabular-nums; }
+
+  /* word + phrase bars */
+  .bars{ display:grid; gap:9px; }
+  .barrow{ display:grid; grid-template-columns: 120px 1fr auto; align-items:center; gap:10px; }
+  .barrow .k{ font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .barrow .k.wide{ }
+  .track{ height:9px; border-radius:5px; background:var(--surface-2); overflow:hidden; }
+  .track > i{ display:block; height:100%; border-radius:5px; background:var(--accent); }
+  .track > i.good{ background:var(--good); } .track > i.warn{ background:var(--warn); } .track > i.crit{ background:var(--crit); }
+  .barrow .v{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:12px; color:var(--muted); min-width:30px; text-align:right; }
+  .phraserow{ display:grid; grid-template-columns: 1fr auto; gap:4px 12px; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--line-soft); }
+  .phraserow:last-child{ border-bottom:0; }
+  .phraserow .pt{ font-family:var(--display); font-size:15px; color:var(--ink); }
+  .phraserow .pm{ display:flex; align-items:center; gap:10px; }
+  .phraserow .track{ width:90px; }
+
+  .empty{ text-align:center; color:var(--muted); padding:26px 10px; }
+  .empty h3{ font-family:var(--display); font-weight:600; font-size:19px; color:var(--ink); margin-bottom:8px; }
+  .hint{ font-size:12px; color:var(--dim); }
+  .footnote{ font-size:11.5px; color:var(--dim); text-align:center; margin-top:24px; line-height:1.6; }
+  .tt{ position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--ground); font-family:var(--mono); font-size:11px; padding:6px 8px; border-radius:6px; opacity:0; transition:opacity .1s; white-space:nowrap; }
+
+  @media (max-width:560px){
+    .tiles{ grid-template-columns:repeat(2,1fr); }
+    table.roster .colWpm, table.roster .hideS{ display:none; }
+    .barrow{ grid-template-columns: 96px 1fr auto; }
+  }
+</style>
+<form class="row" method="get" style="margin:-4px 0 14px">
+  <div class="f" style="flex:0 1 240px">
+    <label class="fl" for="cls">Class</label>
+    <select id="cls" name="class" onchange="this.form.submit()">
+      <option value=""><?= pc_is_admin($me) ? 'All classes' : 'All my classes' ?></option>
+      <?php foreach ($classOptions as $c): ?><option value="<?= h($c) ?>"<?= $c === ($pick ?? '') ? ' selected' : '' ?>><?= h($c) ?></option><?php endforeach; ?>
+    </select>
   </div>
+  <noscript><button class="btn" type="submit">Show</button></noscript>
+</form>
 
 <?php if ($dberr): ?>
   <div class="card"><div class="empty">
@@ -405,15 +282,14 @@ pc_head('Teacher Dashboard - English Buddy');
   </div></div>
 <?php elseif ($data['kpis']['attempts'] === 0): ?>
   <div class="card"><div class="empty">
-    <h3>No practice logged yet</h3>
+    <h3><?= (!pc_is_admin($me) && !$me['classes']) ? 'No classes assigned yet' : 'No practice logged yet' ?></h3>
     <p class="hint">Once students sign in and score a reading, their attempts appear here — confidence trend, streaks, focus words and the toughest phrases.</p>
   </div></div>
 <?php else: ?>
   <div id="dash" class="stack"></div>
 <?php endif; ?>
 
-  <p class="footnote">Read-only view of practice logged on this site. Generated <?= htmlspecialchars($data['generatedAt']) ?>.</p>
-</div>
+  <p class="hint" style="text-align:center;margin-top:18px">Generated <?= h($data['generatedAt']) ?>.</p>
 
 <div class="tt" id="tt"></div>
 
@@ -426,17 +302,6 @@ window.PC_DATA = <?= json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_
   "use strict";
   var D = window.PC_DATA || {};
   var $ = function(s,r){ return (r||document).querySelector(s); };
-
-  /* theme toggle (per-viewer) */
-  var TKEY="phrasecoach.teacher.theme";
-  try{ var t=localStorage.getItem(TKEY); if(t) document.documentElement.setAttribute("data-theme",t); }catch(e){}
-  $("#btnTheme").onclick=function(){
-    var dark=matchMedia("(prefers-color-scheme: dark)").matches;
-    var cur=document.documentElement.getAttribute("data-theme")||(dark?"dark":"light");
-    var nx=cur==="dark"?"light":"dark";
-    document.documentElement.setAttribute("data-theme",nx);
-    try{ localStorage.setItem(TKEY,nx); }catch(e){}
-  };
 
   var dash=$("#dash");
   if(!dash) return;   // empty / error state rendered server-side
@@ -636,4 +501,4 @@ window.PC_DATA = <?= json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_
 
 })();
 </script>
-</body></html>
+<?php pc_page_end();

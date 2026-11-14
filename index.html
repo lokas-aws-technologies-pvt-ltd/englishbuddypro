@@ -2003,13 +2003,28 @@
     if(typeof idDlg.showModal==="function") idDlg.showModal(); else idDlg.setAttribute("open","");
     setTimeout(()=>{ try{ $("#idCode").focus(); }catch(e){} },50);
   }
-  $("#idSave").onclick=()=>{
+  // Is this class code + roll number on the class list (roster)? If the server can't be
+  // reached we let the student in, so practice never stops; the server still checks.
+  async function checkRoster(code, roll){
+    try{
+      const res=await fetch("signin.php",{ method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ class_code:code, roll_no:roll }) });
+      if(!res.ok) return { ok:true, offline:true };
+      return await res.json();
+    }catch(e){ return { ok:true, offline:true }; }
+  }
+  const notOnRoster=(code,roll)=>"We could not find class "+code+", roll "+roll+" on your teacher's list. Check them, or ask your teacher to add you.";
+  $("#idSave").onclick=async()=>{
     const code=$("#idCode").value.trim(), roll=$("#idRoll").value.trim(), name=$("#idName").value.trim();
     if(!code || !roll){ $("#idHint").textContent="Class code and roll number are both needed."; return; }
-    state.student={ code, roll, name };
+    const btn=$("#idSave"); btn.disabled=true; $("#idHint").textContent="Checking\u2026";
+    const r=await checkRoster(code, roll); btn.disabled=false;
+    if(!r.ok){ $("#idHint").textContent=notOnRoster(code, roll); return; }
+    const realName=r.name || name;   // the name on the teacher's list wins
+    state.student={ code:r.class_code||code, roll:r.roll_no||roll, name:realName };
     save(); refreshStudentLabel();
     if(idDlg.open && typeof idDlg.close==="function") idDlg.close(); else idDlg.removeAttribute("open");
-    toast("Signed in as "+code+" · #"+roll+".");
+    toast(realName ? "Welcome, "+realName+"!" : "Signed in as "+code+" \u00B7 #"+roll+".");
     refreshRewards(false);
   };
   $("#btnChangeStudent").onclick=()=>{ closeDlg(); openId(); };   // leave settings, open sign-in on top
@@ -2051,6 +2066,13 @@ pause detection, and the overall score from that.`;
   refreshStudentLabel();
   if(!(state.student && state.student.code && state.student.roll)) openId();   // first run: ask who's practising
   syncAccentOptions(); refreshRewards(false);
+  // re-check a saved student against the roster (a teacher may have removed or renamed them)
+  if(state.student && state.student.code && state.student.roll){
+    checkRoster(state.student.code, state.student.roll).then(r=>{
+      if(!r.ok){ openId(); $("#idHint").textContent=notOnRoster(state.student.code, state.student.roll); }
+      else if(r.name && r.name!==state.student.name){ state.student.name=r.name; save(); refreshStudentLabel(); }
+    });
+  }
 })();
 </script>
 

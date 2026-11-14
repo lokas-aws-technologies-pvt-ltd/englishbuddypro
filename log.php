@@ -26,9 +26,17 @@ try {
   require __DIR__ . '/db.php';
   $pdo = pc_pdo();
 
-  // find-or-create the student; LAST_INSERT_ID(id) returns the existing id on update
+  // roster only: the student must already be on the class roster (added in the backend)
+  if (pc_roster_only($pdo)) {
+    $chk = $pdo->prepare("SELECT id FROM students WHERE class_code=? AND roll_no=?");
+    $chk->execute([substr($code,0,40), substr($roll,0,40)]);
+    if (!$chk->fetch()) { http_response_code(403); echo json_encode(['error'=>'not_on_roster']); exit; }
+  }
+
+  // find-or-create the student; LAST_INSERT_ID(id) returns the existing id on update.
+  // A name already on the roster (set by a teacher) is kept; the typed one only fills a blank.
   $pdo->prepare("INSERT INTO students (class_code, roll_no, name) VALUES (?,?,?)
-                 ON DUPLICATE KEY UPDATE name=VALUES(name), id=LAST_INSERT_ID(id)")
+                 ON DUPLICATE KEY UPDATE name=IF(name IS NULL OR name='', VALUES(name), name), id=LAST_INSERT_ID(id)")
       ->execute([substr($code,0,40), substr($roll,0,40), substr(trim((string)($d['name'] ?? '')),0,80)]);
   $sid = (int)$pdo->lastInsertId();
 
