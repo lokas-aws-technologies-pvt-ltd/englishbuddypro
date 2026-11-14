@@ -845,11 +845,18 @@
       {w:"committee", meaning:"a group of people chosen to decide things"},
       {w:"reconvene", meaning:"to come together and meet again"}]}
   ];
+  // This built-in list is the fallback (offline). The live list comes from library.php, managed
+  // in the backend. Every sentence has a permanent number (id); scores and mastery refer to it.
+  LIBRARY.forEach((p,i)=>{
+    p.id=i+1; p.audio="audio/phrases/p"+String(i+1).padStart(2,"0")+".mp3";
+    p.words.forEach(w=>{ w.audio="audio/words/"+w.w.toLowerCase().replace(/[^a-z0-9]+/g,"")+".mp3"; });
+  });
+  const idxOf=id=>LIBRARY.findIndex(p=>p.id===id);
   const FILLERS=["um","uh","umm","uhh","er","erm","hmm","ah","aah","anh"];
 
   /* ---------------- settings + progress (per-viewer only) ---------------- */
   const SKEY="phrasecoach.v1";
-  const state={ live:false, engine:"azure", lang:"en-US", sound:true, idx:0, theme:null, student:{code:"",roll:"",name:""}, accent:"jade" };
+  const state={ live:false, engine:"azure", lang:"en-US", sound:true, idx:0, sid:0, theme:null, student:{code:"",roll:"",name:""}, accent:"jade" };
   const session={ attempts:0, scores:[], cost:0 };
 
   function load(){
@@ -863,7 +870,7 @@
   }
   function save(){
     try{ localStorage.setItem(SKEY, JSON.stringify({
-      settings:{live:state.live,engine:state.engine,lang:state.lang,sound:state.sound,theme:state.theme,idx:state.idx,student:state.student,accent:state.accent},
+      settings:{live:state.live,engine:state.engine,lang:state.lang,sound:state.sound,theme:state.theme,idx:state.idx,sid:state.sid,student:state.student,accent:state.accent},
       session
     })); }catch(e){}
   }
@@ -893,6 +900,7 @@
   function showPhrase(i){
     state.idx=((i%LIBRARY.length)+LIBRARY.length)%LIBRARY.length;
     current=LIBRARY[state.idx];
+    state.sid=current.id;
     renderPhrase();
     $("#wordCard").hidden=true;
     $("#lvl").textContent=current.lvl; $("#lvl").dataset.lvl=current.lvl;
@@ -906,11 +914,30 @@
   // mastered_list comes from rewards.php; without it nothing is skipped.
   function isMastered(i){
     const m = rw && rw.progress && rw.progress.mastered_list;
-    return Array.isArray(m) && m.includes(i+1);
+    return Array.isArray(m) && !!LIBRARY[i] && m.includes(LIBRARY[i].id);
   }
   function nextOpen(from){
     for(let k=1;k<=LIBRARY.length;k++){ const j=(from+k)%LIBRARY.length; if(!isMastered(j)) return j; }
     return (from+1)%LIBRARY.length;   // everything mastered: keep reviewing in order
+  }
+
+  /* Live sentence list from the backend. Keeps the student on the same sentence and never
+     interrupts a recording or a result; if the server can't be reached the built-in list stays. */
+  async function loadLibrary(wantSid){
+    let d=null;
+    try{ const res=await fetch("library.php",{cache:"no-cache"}); if(res.ok) d=await res.json(); }catch(e){}
+    if(!d || !d.ok || !Array.isArray(d.sentences) || !d.sentences.length) return;
+    LIBRARY.length=0;
+    d.sentences.forEach(x=>LIBRARY.push({ id:x.id, t:x.t, lvl:x.lvl, audio:x.audio||null, words:Array.isArray(x.words)?x.words:[] }));
+    let j=idxOf(wantSid); if(j<0) j=idxOf(state.sid);
+    if(takeBlob || capturing || !$("#result").hidden){       // busy: keep the current sentence on screen
+      if(j>=0) state.idx=j; else state.idx=Math.min(state.idx, LIBRARY.length-1);
+      $("#phraseIdx").textContent=(state.idx+1)+" / "+LIBRARY.length;
+      return;
+    }
+    showPhrase(j>=0 ? j : 0);
+    if(isMastered(state.idx)) showPhrase(nextOpen(state.idx));
+    if(typeof renderStudentProgress==="function" && rw) renderStudentProgress();
   }
 
   /* ---------------- hard words: meaning + audio ---------------- */
@@ -925,7 +952,7 @@
       if(hit){
         const b=document.createElement("button");
         b.type="button"; b.className="hardword";
-        b.textContent=tok; b.dataset.w=hit.w; b.dataset.mean=hit.meaning;
+        b.textContent=tok; b.dataset.w=hit.w; b.dataset.mean=hit.meaning; b.dataset.audio=hit.audio||"";
         el.appendChild(b);
       } else el.appendChild(document.createTextNode(tok));
     });
@@ -948,21 +975,22 @@
       if(p && p.catch) p.catch(fb);
     }catch(e){ fb(); }
   }
-  function speakWord(w){ playClip("audio/words/"+slug(w)+".mp3", ()=>ttsSpeak(w,.8)); }
+  let wcAudio="";
+  function speakWord(w, audio){ if(audio) playClip(audio, ()=>ttsSpeak(w,.8)); else ttsSpeak(w,.8); }
   $("#phraseText").addEventListener("click",e=>{
     const b=e.target.closest(".hardword"); if(!b) return;
-    wcCurrent=b.dataset.w;
+    wcCurrent=b.dataset.w; wcAudio=b.dataset.audio||"";
     $("#wcWord").textContent=b.dataset.w;
     $("#wcMean").textContent=b.dataset.mean;
     $("#wordCard").hidden=false;
-    speakWord(wcCurrent);
+    speakWord(wcCurrent, wcAudio);
   });
-  $("#wcPlay").onclick=()=>{ if(wcCurrent) speakWord(wcCurrent); };
+  $("#wcPlay").onclick=()=>{ if(wcCurrent) speakWord(wcCurrent, wcAudio); };
 
   /* ---------------- TTS ---------------- */
   $("#btnListen").onclick=()=>{
-    const n=String(state.idx+1).padStart(2,"0");
-    playClip("audio/phrases/p"+n+".mp3", ()=>ttsSpeak(current.t,.92));
+    if(current.audio) playClip(current.audio, ()=>ttsSpeak(current.t,.92));
+    else ttsSpeak(current.t,.92);
   };
 
   /* ---------------- recording ---------------- */
@@ -1179,7 +1207,7 @@
      - not on a rough reading: flow comes first, so the phone score must reach AI_GATE.
      Without rewards data (offline, not signed in) nothing counts as mastered, so AI still runs. */
   function aiGate(local){
-    const mastered = rw && Array.isArray(rw.pron_mastered) && rw.pron_mastered.includes(state.idx+1);
+    const mastered = rw && Array.isArray(rw.pron_mastered) && rw.pron_mastered.includes(current.id);
     if(mastered) return { ok:false, why:"mastered" };
     if(local.overall < AI_GATE) return { ok:false, why:"rough", score:local.overall };
     return { ok:true };
@@ -1198,7 +1226,7 @@
     const skipped = (r.words||[]).filter(w=>w.errorType==="Omission").map(w=>w.word);
     const payload={
       class_code: stu.code, roll_no: stu.roll, name: stu.name||"",
-      phrase_idx: state.idx+1,
+      phrase_idx: current.id,
       difficulty: current ? current.lvl : null,
       engine,
       overall: val(r.overall),
@@ -1707,7 +1735,7 @@
   applyAccent();
 
   let rw=null;   // latest status from rewards.php
-  const phraseText=i=>{ const p=LIBRARY[i-1]; return p? p.t : ""; };
+  const phraseText=id=>{ const p=LIBRARY[idxOf(id)]; return p? p.t : ""; };
 
   async function rewardsCall(body){
     const stu=state.student||{};
@@ -1777,14 +1805,15 @@
 
     $("#pgStreak").textContent=P.streak;
     $("#pgFlame").classList.toggle("cold", !P.practised_today);
-    $("#pgMastered").textContent=P.mastered;
-    const left=Math.max(0, LIBRARY.length-P.mastered);
+    const mNow=(P.mastered_list||[]).filter(id=>idxOf(id)>=0).length;   // mastered among the current sentences
+    $("#pgMastered").textContent=mNow;
+    const left=Math.max(0, LIBRARY.length-mNow);
     $("#pgLeft").textContent=left;
     $("#pgLeftLab").textContent = left ? "still to go" : "all done!";
     $("#pgBest").textContent = P.best_streak>0 ? "best: "+P.best_streak+" day"+(P.best_streak>1?"s":"")+" in a row" : "";
 
     let msg;
-    if(P.mastered>=LIBRARY.length) msg="\uD83C\uDFC6 Super! You mastered all "+LIBRARY.length+" sentences.";
+    if(mNow>=LIBRARY.length) msg="\uD83C\uDFC6 Super! You mastered all "+LIBRARY.length+" sentences.";
     else if(P.streak>0 && P.practised_today)
       msg = P.streak===1 ? "Good start! Practise again tomorrow to make it 2 days in a row."
                          : "\uD83D\uDD25 Well done! You practised today. That is "+P.streak+" days in a row. Come back tomorrow!";
@@ -1838,7 +1867,7 @@
     const quote=i=>{ const q=document.createElement("span"); q.className="hq"; q.textContent="“"+phraseText(i)+"”"; el.appendChild(q); };
     const btn=(label,pick)=>{ const b=document.createElement("button"); b.type="button"; b.className="btn sm"; b.textContent=label;
       b.onclick=()=>{ showPhrase(pick()); $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); }; el.appendChild(b); };
-    const go=i=>btn("Practise this sentence →", ()=>i-1);
+    const go=id=>{ if(idxOf(id)>=0) btn("Practise this sentence →", ()=>idxOf(id)); };
     switch(h.kind){
       case "scratch":  break;   // the scratch button says it all
       case "start":    say("Score your first sentence to start earning points."); break;
@@ -1849,7 +1878,7 @@
         say((h.capped?CAPPED+"Beat a personal best to keep going! ":"")+"Your best on this sentence is "+Number(h.best).toFixed(1)+". Every point better earns +"+h.rate+".");
         quote(h.phrase_idx); go(h.phrase_idx); break;
       case "tomorrow": say(CAPPED+"Come back tomorrow to keep filling your bar!"); break;
-      default:         say("Read a new sentence to earn points."); btn("Next sentence →", ()=>state.idx+1);
+      default:         say("Read a new sentence to earn points."); btn("Next sentence →", ()=>nextOpen(state.idx));
     }
   }
 
@@ -2078,7 +2107,10 @@ pause detection, and the overall score from that.`;
   /* ---------------- boot ---------------- */
   window.addEventListener("resize", sizeScope);
   window.addEventListener("beforeunload", ()=>{ if(stream) stream.getTracks().forEach(t=>t.stop()); });
-  refreshMode(); renderProgress(); sizeScope(); showPhrase(state.idx||0);
+  if(!state.sid) state.sid=(state.idx||0)+1;          // older saves kept the position; positions 1-25 = numbers 1-25
+  const wantSid=state.sid;                            // a newer sentence may only exist in the live list
+  refreshMode(); renderProgress(); sizeScope(); showPhrase(Math.max(0, idxOf(state.sid)));
+  loadLibrary(wantSid);
   refreshStudentLabel();
   if(!(state.student && state.student.code && state.student.roll)) openId();   // first run: ask who's practising
   syncAccentOptions(); refreshRewards(false);

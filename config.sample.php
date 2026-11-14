@@ -4,7 +4,8 @@
  * and fill in your keys. Do NOT commit config.php to a public repo.
  */
 
-// --- Azure (score.php) ---
+// --- Azure: Indian-voice audio for new/edited sentences (backend Sentences tab) ---
+// (The app scores pronunciation with Google; score.php/Azure scoring is optional.)
 // Azure portal -> your Speech resource -> "Keys and Endpoint".
 $AZURE_KEY    = 'PASTE_YOUR_AZURE_SPEECH_KEY_HERE';
 $AZURE_REGION = 'centralindia';   // e.g. centralindia, eastus, southeastasia

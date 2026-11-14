@@ -21,6 +21,10 @@ deployment:
     - /bin/cp -f admin_gifts.php $DEPLOYPATH
     - /bin/cp -f ai_lib.php $DEPLOYPATH
     - /bin/cp -f admin_ai.php $DEPLOYPATH
+    - /bin/cp -f library.php $DEPLOYPATH
+    - /bin/cp -f tts_lib.php $DEPLOYPATH
+    - /bin/cp -f sentences_seed.php $DEPLOYPATH
+    - /bin/cp -f admin_sentences.php $DEPLOYPATH
     - /bin/cp -f signin.php $DEPLOYPATH
     - /bin/cp -f rewards.php $DEPLOYPATH
     - /bin/cp -f .htaccess $DEPLOYPATH

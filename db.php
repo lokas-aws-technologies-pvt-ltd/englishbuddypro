@@ -80,6 +80,20 @@ function pc_ensure_schema($pdo){
     v TEXT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+  // the practice sentences, managed in the backend. id = the permanent sentence number
+  // (attempts.phrase_idx refers to it), so sentences are retired, never deleted.
+  $pdo->exec("CREATE TABLE IF NOT EXISTS sentences (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    position   INT NOT NULL DEFAULT 0,
+    text       VARCHAR(300) NOT NULL,
+    level      VARCHAR(10) NOT NULL DEFAULT 'Easy',
+    word1      VARCHAR(40) NULL, meaning1 VARCHAR(160) NULL,
+    word2      VARCHAR(40) NULL, meaning2 VARCHAR(160) NULL,
+    audio      VARCHAR(160) NULL,
+    active     TINYINT(1) NOT NULL DEFAULT 1,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
   // one row per paid AI check (Google/Azure): usage, cost and the monthly limit
   $pdo->exec("CREATE TABLE IF NOT EXISTS ai_calls (
     id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -158,3 +172,28 @@ function pc_active_gifts($pdo) {
   return $pdo->query("SELECT id, position, name, description, image FROM gifts WHERE active=1 ORDER BY position, id")->fetchAll();
 }
 function pc_gift_image_url($file) { return $file ? 'uploads/gifts/' . rawurlencode($file) : null; }
+
+/* ---------------- sentences ---------------- */
+/* All sentences (active and retired) by id. The first time, loads the original 25. */
+function pc_sentences($pdo) {
+  if ((int)$pdo->query("SELECT COUNT(*) FROM sentences")->fetchColumn() === 0) {
+    $ins = $pdo->prepare("INSERT INTO sentences (id, position, text, level, word1, meaning1, word2, meaning2, audio) VALUES (?,?,?,?,?,?,?,?,?)");
+    foreach (require __DIR__ . '/sentences_seed.php' as $r) {
+      $ins->execute([$r[0], $r[0], $r[1], $r[2], $r[3], $r[4], $r[5], $r[6], sprintf('audio/phrases/p%02d.mp3', $r[0])]);
+    }
+  }
+  $out = [];
+  foreach ($pdo->query("SELECT * FROM sentences ORDER BY position, id") as $r) $out[(int)$r['id']] = $r;
+  return $out;
+}
+function pc_active_sentence_ids($pdo) {
+  return array_keys(array_filter(pc_sentences($pdo), function ($r) { return (int)$r['active'] === 1; }));
+}
+function pc_word_slug($w) { return preg_replace('/[^a-z0-9]+/', '', strtolower((string)$w)); }
+/* A hard word's Indian-voice clip, if one exists (original set or generated in the backend). */
+function pc_word_audio($w) {
+  $s = pc_word_slug($w);
+  if ($s === '') return null;
+  foreach (['audio/words/', 'uploads/audio/words/'] as $dir) if (is_file(__DIR__ . '/' . $dir . $s . '.mp3')) return $dir . $s . '.mp3';
+  return null;
+}

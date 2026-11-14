@@ -205,6 +205,7 @@ CSS;
   echo "</head>\n<body>\n<div class=\"wrap\">\n";
   if ($me) {
     $tabs = ['overview' => ['Overview', 'teacher.php'], 'students' => ['Students', 'admin_students.php']];
+    if (pc_is_admin($me)) $tabs['sentences'] = ['Sentences', 'admin_sentences.php'];
     if (pc_is_admin($me)) $tabs['gifts'] = ['Gifts & points', 'admin_gifts.php'];
     if (pc_is_admin($me)) $tabs['ai'] = ['AI usage', 'admin_ai.php'];
     $tabs['users'] = [pc_is_admin($me) ? 'Logins' : 'My account', 'admin_users.php'];

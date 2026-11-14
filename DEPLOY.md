@@ -70,6 +70,26 @@ the Students page. Students who were removed are asked to sign in again.
 The old shared teacher passcode no longer opens the dashboard; `teacher.php`
 now needs a login.
 
+## Sentences (backend: Sentences tab, admin only)
+The app loads its sentences from the server (`library.php`), in the order set
+here. The first time, the original 25 are loaded with their existing audio.
+
+- **Add / edit:** sentence, level (Easy, Medium, Hard), up to two hard words,
+  each with a short meaning. Hard words must appear in the sentence (the app
+  underlines them by matching the word).
+- **Voice:** on save, an Indian-English clip (Azure "Neerja") is made for the
+  sentence and its hard words, using `$AZURE_KEY` / `$AZURE_REGION` from
+  `config.php` (audio only; scoring uses Google). Editing the text makes a new
+  clip. Without a key, those sentences use the phone's own voice.
+  "Make missing voice clips" fills any gaps, e.g. after adding the key.
+  Clips are saved in `uploads/audio/` (server only, never overwritten by deploys).
+- **Reorder, retire, bring back.** Every sentence keeps its number (#) for good,
+  so students' scores, mastery and the Overview stay correct; sentences are
+  retired, never deleted. Changing a sentence a lot? Retire it and add a new one.
+- If the server can't be reached, the app uses its built-in 25 sentences.
+- `generate_audio.php` (the original one-time audio generator) is no longer
+  needed.
+
 ## Gifts and points (backend: Gifts & points tab, admin only)
 Students earn points for practising and more for improving; a full bar unlocks a
 scratch card. Everything is set in the backend, no code edits needed:

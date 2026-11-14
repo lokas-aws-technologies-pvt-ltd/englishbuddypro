@@ -237,12 +237,15 @@ function pc_status($pdo, $sid, $name) {
 
   // concrete targets for the hint
   $pbTarget = null;                                   // the tried sentence with most room to grow
+  $activeIds = array_flip(pc_active_sentence_ids($pdo));   // never point students at a retired sentence
   foreach ($c['best'] as $p => $b) {
+    if (!isset($activeIds[$p])) continue;
     if ($p < 1 || $b >= 9.5 || isset($c['mastered'][$p])) continue;   // never suggest a mastered sentence
     if ($pbTarget === null || $b < $pbTarget['best']) $pbTarget = ['phrase_idx'=>$p, 'best'=>round($b, 1)];
   }
   $mTarget = null;                                    // a sentence one good day away from mastery
   foreach ($c['high'] as $p => $days) {
+    if (!isset($activeIds[$p])) continue;
     if ($p < 1 || isset($c['mastered'][$p]) || count($days) != PC_MASTERY_DAYS - 1) continue;
     $cand = ['phrase_idx'=>$p, 'today'=>isset($days[$today])];
     if ($mTarget === null || ($mTarget['today'] && !$cand['today'])) $mTarget = $cand;

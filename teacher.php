@@ -17,33 +17,7 @@ $me = pc_require_login();
 
 // Phrase text by 1-based index. MUST stay in the same order as index.html's
 // LIBRARY (and generate_audio.php). Used only to label the "toughest phrases".
-$PHRASES = [
-  "Please confirm your availability for Thursday.",
-  "I will forward the document immediately.",
-  "Kindly acknowledge receipt of this email.",
-  "Let's schedule a brief meeting tomorrow.",
-  "Please review the attachment before the call.",
-  "We appreciate your prompt response.",
-  "The invoice is due by the end of the month.",
-  "Could you clarify the requirements for me?",
-  "I will coordinate with the vendor today.",
-  "Please ensure the report is accurate.",
-  "My colleague will handle the presentation.",
-  "We need to prioritise the urgent tasks.",
-  "The deadline for the project is Wednesday.",
-  "Please escalate the issue to the manager.",
-  "Let's collaborate on the quarterly report.",
-  "The client requested a detailed proposal.",
-  "We should allocate the budget carefully.",
-  "Please summarise the key points briefly.",
-  "The manager approved the revised schedule.",
-  "Our team exceeded the monthly target.",
-  "Our clientele expects punctual, professional service.",
-  "The entrepreneur negotiated a favourable contract.",
-  "I appreciate your thorough and prompt feedback.",
-  "My colleague queried the miscellaneous expenses.",
-  "The committee will reconvene next Wednesday.",
-];
+$PHRASES = [];   // sentence text by permanent number, filled from the database below
 
 function ago($ts){
   if(!$ts) return "never";
@@ -65,6 +39,7 @@ $data = [
 
 try {
   $pdo = pc_db();
+  foreach (pc_sentences($pdo) as $sid => $sr) $PHRASES[$sid] = $sr['text'] . ((int)$sr['active'] === 1 ? '' : ' (retired)');
 
   [$cw, $cp] = pc_class_where($me, 's');
   $classOptions = pc_class_options($me);
@@ -178,7 +153,7 @@ try {
   $ph=[];
   foreach ($phraseAgg as $pi=>$v) {
     if($v['cnt']<2) continue;
-    $ph[]=['idx'=>$pi, 'text'=> $PHRASES[$pi-1] ?? ('Phrase '.$pi), 'n'=>$v['n'], 'avg'=>round($v['sum']/$v['cnt'],1)];
+    $ph[]=['idx'=>$pi, 'text'=> ($PHRASES[$pi] ?? ('Sentence #'.$pi)), 'n'=>$v['n'], 'avg'=>round($v['sum']/$v['cnt'],1)];
   }
   usort($ph, fn($a,$b)=> $a['avg'] <=> $b['avg']);
   $data['phrases'] = array_slice($ph, 0, 8);
