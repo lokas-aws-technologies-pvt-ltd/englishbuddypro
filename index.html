@@ -433,10 +433,10 @@
   @media (max-width:400px){ .mode #modeText{ display:none; } .mode{ padding:7px; } .brand h1{ font-size:21px; } }
   @media (max-width:340px){ .top{ gap:6px; } .brand h1{ font-size:18px; } .iconbtn{ padding:6px 8px; } }
   #progressCard[hidden], #sessionCard[hidden]{ display:none !important; }
-  .pg-top{ display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:10px; margin-top:12px; }
+  .pg-top{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; }
   .pg-tile{ border:1px solid var(--line-soft); border-radius:var(--r-sm); background:var(--ground); padding:11px 12px; min-width:0; }
-  .pg-tile.streak{ display:flex; align-items:center; gap:9px; }
-  .pg-flame{ font-size:28px; line-height:1; }
+  .pg-tile.streak{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:12px 6px; }
+  .pg-flame{ font-size:24px; line-height:1; }
   .pg-flame.cold{ filter:grayscale(1); opacity:.5; }
   .pg-num{ font-family:var(--ui); font-weight:600; font-size:26px; line-height:1; }
   .pg-lab{ font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.3; }
@@ -625,10 +625,16 @@
       <div class="pg-top">
         <div class="pg-tile streak">
           <span class="pg-flame" id="pgFlame" aria-hidden="true">&#128293;</span>
-          <div><div class="pg-num" id="pgStreak">0</div><div class="pg-lab">day streak</div></div>
+          <div><div class="pg-num" id="pgStreak">0</div><div class="pg-lab">days in a row</div></div>
         </div>
-        <div class="pg-tile"><div class="pg-num" id="pgTried">0</div><div class="pg-lab" id="pgTriedLab">sentences tried</div></div>
-        <div class="pg-tile"><div class="pg-num" id="pgMastered">0</div><div class="pg-lab">mastered</div></div>
+        <div class="pg-tile streak">
+          <span class="pg-flame" aria-hidden="true">&#127942;</span>
+          <div><div class="pg-num" id="pgMastered">0</div><div class="pg-lab">mastered</div></div>
+        </div>
+        <div class="pg-tile streak">
+          <span class="pg-flame" aria-hidden="true">&#127919;</span>
+          <div><div class="pg-num" id="pgLeft">0</div><div class="pg-lab" id="pgLeftLab">still to go</div></div>
+        </div>
       </div>
       <div class="pg-msg" id="pgMsg"></div>
       <div class="section-t" style="margin:18px 0 10px">Your last 7 days &middot; tries per day</div>
@@ -890,7 +896,18 @@
     $("#phraseIdx").textContent=(state.idx+1)+" / "+LIBRARY.length;
     resetTake();
     $("#result").hidden=true;
+    $("#btnRetry").hidden=false;
     save();
+  }
+  // Mastered sentences (8+ on two different days) are done: skip them.
+  // mastered_list comes from rewards.php; without it nothing is skipped.
+  function isMastered(i){
+    const m = rw && rw.progress && rw.progress.mastered_list;
+    return Array.isArray(m) && m.includes(i+1);
+  }
+  function nextOpen(from){
+    for(let k=1;k<=LIBRARY.length;k++){ const j=(from+k)%LIBRARY.length; if(!isMastered(j)) return j; }
+    return (from+1)%LIBRARY.length;   // everything mastered: keep reviewing in order
   }
 
   /* ---------------- hard words: meaning + audio ---------------- */
@@ -1142,6 +1159,7 @@
   /* ---------------- scoring ---------------- */
   const WEIGHTS={ fluency:.30, flow:.30, pronunciation:.25, completeness:.15 };
   const PAUSE_MS=400;                 // a gap longer than this counts as hesitation
+  const LEAD_OK_MS=2500;              // silence before the first word is fine up to this (reaction + a breath)
   const AI_GATE=7;                    // on-device score needed before the paid AI checks pronunciation
   const AZURE_RATE_PER_HOUR=1.30;     // Azure paid S0: STT + pronunciation add-on, per audio hour
   const TARGET_WPM=120;               // a confident, natural reading pace
@@ -1326,7 +1344,7 @@
     // --- pause score: each long pause costs ~1 (more when longer); slow start & fillers add ---
     let pausePenalty=0;
     for(const p of pauses) pausePenalty += 1 + Math.min(3,(p.gapMs-PAUSE_MS)/500);
-    if(leadMs>1500) pausePenalty += Math.min(2,(leadMs-1500)/1000);
+    if(leadMs>LEAD_OK_MS) pausePenalty += Math.min(2,(leadMs-LEAD_OK_MS)/1000);
     pausePenalty += fillerWords.length*1.5;
     const pauseScore=clamp10(10-pausePenalty);
 
@@ -1523,7 +1541,7 @@
       addFlag(flags,"warn","Pace", "Slow — about "+Math.round(r.wpm)+" words a minute"+(r.spanS?" ("+r.spanS.toFixed(1)+"s for the line)":"")+
         ". Aim to say it in about "+target+"s, as one run.");
     }
-    if(r.leadMs>1500){
+    if(r.leadMs>LEAD_OK_MS){
       addFlag(flags,"warn","Start", (r.leadMs/1000).toFixed(1)+"s of silence before you began. Start as soon as you're ready.");
     }
     if(r.pauses.length){
@@ -1651,8 +1669,8 @@
     finally{ b.disabled=false; b.textContent="Score a sample take"; }
   };
 
-  $("#btnSkip").onclick=()=>showPhrase(state.idx+1);
-  $("#btnNext").onclick=()=>{ showPhrase(state.idx+1); $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); };
+  $("#btnSkip").onclick=()=>showPhrase(nextOpen(state.idx));
+  $("#btnNext").onclick=()=>{ showPhrase(nextOpen(state.idx)); $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); };
   $("#btnRetry").onclick=()=>{ resetTake(); $("#result").hidden=true; $("#practice").scrollIntoView({behavior:"smooth",block:"start"}); };
 
   /* settings dialog */
@@ -1698,6 +1716,10 @@
     catch(e){ rw=null; $("#rewardsCard").hidden=true; renderStudentProgress(); return; }   // no backend / DB: hide, show session card
     if(afterAttempt) pgSel=6;                  // jump the 7-day chart back to today
     renderRewards(); renderStudentProgress(); syncAccentOptions();
+    if(isMastered(state.idx)){
+      if(afterAttempt) $("#btnRetry").hidden=true;                   // just mastered: move on, not again
+      else if($("#result").hidden) showPhrase(nextOpen(state.idx));   // never open on a mastered sentence
+    }
     if(afterAttempt) showGain(before);
   }
 
@@ -1742,18 +1764,20 @@
 
     $("#pgStreak").textContent=P.streak;
     $("#pgFlame").classList.toggle("cold", !P.practised_today);
-    $("#pgTried").textContent=P.sentences_tried;
-    $("#pgTriedLab").textContent="of "+LIBRARY.length+" sentences tried";
     $("#pgMastered").textContent=P.mastered;
-    $("#pgBest").textContent = P.best_streak>0 ? "best streak: "+P.best_streak+" day"+(P.best_streak>1?"s":"") : "";
+    const left=Math.max(0, LIBRARY.length-P.mastered);
+    $("#pgLeft").textContent=left;
+    $("#pgLeftLab").textContent = left ? "still to go" : "all done!";
+    $("#pgBest").textContent = P.best_streak>0 ? "best: "+P.best_streak+" day"+(P.best_streak>1?"s":"")+" in a row" : "";
 
     let msg;
-    if(P.streak>0 && P.practised_today)
-      msg = P.streak===1 ? "Great start! Come back tomorrow to make it a 2-day streak."
-                         : "\uD83D\uDD25 You've practised today \u2014 your "+P.streak+"-day streak is safe. See you tomorrow!";
-    else if(P.streak>0) msg="Practise today to keep your "+P.streak+"-day streak going!";
-    else if(P.best_streak>0) msg="Start a new streak today \u2014 your best is "+P.best_streak+" day"+(P.best_streak>1?"s":"")+".";
-    else msg="Read your first sentence today to start a streak.";
+    if(P.mastered>=LIBRARY.length) msg="\uD83C\uDFC6 Super! You mastered all "+LIBRARY.length+" sentences.";
+    else if(P.streak>0 && P.practised_today)
+      msg = P.streak===1 ? "Good start! Practise again tomorrow to make it 2 days in a row."
+                         : "\uD83D\uDD25 Well done! You practised today. That is "+P.streak+" days in a row. Come back tomorrow!";
+    else if(P.streak>0) msg="You practised "+P.streak+" day"+(P.streak>1?"s":"")+" in a row. Practise today to keep it going!";
+    else if(P.best_streak>0) msg="Practise today to start again. Your best was "+P.best_streak+" day"+(P.best_streak>1?"s":"")+" in a row.";
+    else msg="Read your first sentence today to start.";
     $("#pgMsg").textContent=msg;
 
     // 7 columns = tries per day; tap a day to see its tries and average

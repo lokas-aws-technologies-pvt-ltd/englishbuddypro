@@ -157,7 +157,8 @@ function pc_progress($c, $today) {
   return ['streak'=>$streak, 'best_streak'=>$best, 'practised_today'=>isset($days[$today]),
           'week'=>$week, 'week_tries'=>$n7, 'week_avg'=>$n7 ? round($sum7 / $n7, 1) : null,
           'prev_week_avg'=>$nP ? round($sumP / $nP, 1) : null,
-          'total_tries'=>count($c['valid']), 'sentences_tried'=>count($phrases), 'mastered'=>count($c['mastered'])];
+          'total_tries'=>count($c['valid']), 'sentences_tried'=>count($phrases), 'mastered'=>count($c['mastered']),
+          'mastered_list'=>array_map('intval', array_keys($c['mastered']))];   // the app skips these
 }
 
 /* Sentences whose pronunciation this student has already nailed on AI scoring
@@ -225,7 +226,7 @@ function pc_status($pdo, $sid, $name) {
   // concrete targets for the hint
   $pbTarget = null;                                   // the tried sentence with most room to grow
   foreach ($c['best'] as $p => $b) {
-    if ($p < 1 || $b >= 9.5) continue;
+    if ($p < 1 || $b >= 9.5 || isset($c['mastered'][$p])) continue;   // never suggest a mastered sentence
     if ($pbTarget === null || $b < $pbTarget['best']) $pbTarget = ['phrase_idx'=>$p, 'best'=>round($b, 1)];
   }
   $mTarget = null;                                    // a sentence one good day away from mastery
