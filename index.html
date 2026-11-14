@@ -470,7 +470,6 @@
     </div>
     <span class="sp"></span>
     <span class="mode" id="modePill" title="Scoring source"><span class="dot"></span><span id="modeText">Demo</span></span>
-    <button class="iconbtn" id="btnTheme" aria-label="Toggle light or dark theme" title="Theme">◐</button>
     <button class="iconbtn" id="btnSettings" aria-label="Settings" title="Settings">⚙</button>
   </div>
 
@@ -668,40 +667,7 @@
 <dialog id="dlg">
   <div class="dlg-body">
     <h3>Settings</h3>
-    <p class="sub-note">Switch between the built-in demo and your live scoring backend.</p>
-
-    <div class="field">
-      <div class="switch">
-        <input type="checkbox" id="setLive">
-        <label for="setLive" style="margin:0;color:var(--ink);font-size:14px">Add AI pronunciation scoring</label>
-      </div>
-      <div class="hint">Off (default) = free on-device scoring: pace, pauses and confidence, no internet. On = also grade pronunciation with the engine below, but only on smooth readings (7+), and not on sentences whose pronunciation you have already mastered. That keeps AI cost low.</div>
-    </div>
-
-    <div class="field">
-      <div class="switch">
-        <input type="checkbox" id="setSound">
-        <label for="setSound" style="margin:0;color:var(--ink);font-size:14px">Play a sound with results</label>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="fl" for="setEngine">AI engine (when the above is on)</label>
-      <select id="setEngine">
-        <option value="azure">Azure — stable, calibrated (score.php)</option>
-        <option value="gemini">Gemini Flash-Lite — cheaper, richer (score_gemini.php)</option>
-      </select>
-      <div class="hint">Record once, then score with each engine to compare marks and cost on the same clip.</div>
-    </div>
-
-    <div class="field">
-      <label class="fl" for="setLang">Spoken language</label>
-      <select id="setLang">
-        <option value="en-US">English — US (richest feedback)</option>
-        <option value="en-IN">English — India (fairer to Indian accents)</option>
-        <option value="en-GB">English — UK</option>
-      </select>
-    </div>
+    <p class="sub-note">Every reading is scored on your phone. Smooth readings (7+) also get a pronunciation check by Google AI. Language: English (India).</p>
 
     <div class="field">
       <label class="fl">Student (for progress tracking)</label>
@@ -712,17 +678,11 @@
     </div>
 
     <div class="field">
-      <label class="fl" for="setAccent">Colour</label>
-      <select id="setAccent"><option value="jade">Jade (default)</option></select>
-      <div class="hint" id="accentHint">Unlock more colours with scratch cards.</div>
-    </div>
-
-    <div class="field">
       <button class="btn sm" id="btnPreviewCard" type="button">&#127873; Preview a scratch card</button>
       <div class="hint">Try the scratch effect. Preview only &mdash; nothing is saved or unlocked.</div>
     </div>
 
-    <details class="dev">
+    <details class="dev" id="devContract" hidden>
       <summary>Backend contract for developers</summary>
       <pre id="contract"></pre>
     </details>
@@ -891,6 +851,10 @@
     })); }catch(e){}
   }
   load();
+  // Fixed for students (no switches): Google AI pronunciation check on smooth readings,
+  // sound on, English (India), light mode. Overrides anything saved on the phone earlier.
+  Object.assign(state, { live:true, engine:"gemini", lang:"en-IN", sound:true, theme:"light" });
+  const DEV = new URLSearchParams(location.search).has("dev");   // ?dev=1 shows developer info
 
   /* ---------------- theme ---------------- */
   function applyTheme(){
@@ -899,17 +863,11 @@
     else root.removeAttribute("data-theme");
   }
   applyTheme();
-  $("#btnTheme").onclick=()=>{
-    const dark=matchMedia("(prefers-color-scheme: dark)").matches;
-    const cur=state.theme||(dark?"dark":"light");
-    state.theme=cur==="dark"?"light":"dark";
-    applyTheme(); save();
-  };
 
   /* ---------------- mode pill ---------------- */
   function refreshMode(){
     const pill=$("#modePill");
-    if(state.live){ pill.classList.add("live"); $("#modeText").textContent=state.engine==="gemini"?"AI · Gemini":"AI · Azure"; }
+    if(state.live){ pill.classList.add("live"); $("#modeText").textContent=state.engine==="gemini"?"AI · Google":"AI · Azure"; }
     else { pill.classList.remove("live"); $("#modeText").textContent="On-device"; }
   }
 
@@ -1489,14 +1447,14 @@
     const note=$("#modeNote"); note.hidden=false;
     const why = gate && !gate.ok ? gate.why : null;
     note.innerHTML = !localMode
-      ? '<b>Smooth reading &mdash; pronunciation checked (' + ({azure:"Azure",gemini:"Gemini"}[engine]||engine) + ').</b> Adds pronunciation and completeness on top of the on-device pace and pauses.'
+      ? '<b>Smooth reading &mdash; pronunciation checked (' + ({azure:"Azure",gemini:"Google AI"}[engine]||engine) + ').</b> Adds pronunciation and completeness on top of the on-device pace and pauses.'
       : why==="rough"
       ? '<b>On-device scoring.</b> &#127908; Read it smoothly (' + AI_GATE + '+) to unlock the pronunciation check. This reading: ' + r.overall.toFixed(1) + '.'
       : why==="mastered"
       ? '<b>&#10003; Pronunciation mastered.</b> You have already nailed the pronunciation of this sentence, so this reading was scored on your phone, free.'
       : why==="failed"
       ? '<b>On-device scoring.</b> The pronunciation check could not run this time (see the red box), so here is your score from the phone.'
-      : '<b>On-device scoring.</b> Pace, pauses and confidence, measured on your phone — no internet, no cost. Turn on AI scoring in Settings to also grade pronunciation.';
+      : '<b>On-device scoring.</b> Pace, pauses and confidence, measured on your phone — no internet, no cost. Smooth readings (7+) also get a pronunciation check.';
 
     // big overall speedometer
     const big=$("#gaugeBig"); big.innerHTML=""; big.appendChild(buildGauge(r.overall,{big:true}));
@@ -1652,7 +1610,7 @@
     $("#costPerK").textContent=usd(per1k);
     const lbl={azure:"Azure",gemini:"Gemini Flash-Lite",demo:"demo estimate"}[engine]||"paid tier";
     $("#costEngine").textContent=lbl;
-    $("#costCard").hidden=false;
+    $("#costCard").hidden=!DEV;   // dollar costs are developer info, not for students
   }
 
   /* ---------------- misc ui ---------------- */
@@ -1692,13 +1650,9 @@
   /* settings dialog */
   const dlg=$("#dlg");
   $("#btnSettings").onclick=()=>{
-    $("#setLive").checked=state.live; $("#setEngine").value=state.engine; $("#setLang").value=state.lang; $("#setSound").checked=state.sound;
-    syncAccentOptions();
     if(typeof dlg.showModal==="function") dlg.showModal(); else dlg.setAttribute("open","");
   };
   function closeDlg(){
-    state.live=$("#setLive").checked; state.engine=$("#setEngine").value; state.lang=$("#setLang").value; state.sound=$("#setSound").checked;
-    state.accent=$("#setAccent").value||"jade"; applyAccent();
     save(); refreshMode();
     if(dlg.open && typeof dlg.close==="function") dlg.close(); else dlg.removeAttribute("open");
   }
@@ -1890,15 +1844,10 @@
     } else if(total>0) toast("+"+total+" points");
   }
 
+  // no colour picker for students: keep the colour only if this student has won it
   function syncAccentOptions(){
-    const sel=$("#setAccent");
-    let have=["jade"].concat(rw ? rw.unlocks.themes : []);
-    if(rw && !have.includes(state.accent||"jade")){ state.accent="jade"; save(); applyAccent(); }   // not unlocked for this student
-    if(!rw && state.accent && !have.includes(state.accent)) have.push(state.accent);                 // offline: keep current
-    sel.innerHTML="";
-    have.forEach(k=>{ const o=document.createElement("option"); o.value=k; o.textContent=ACCENTS[k]||k; sel.appendChild(o); });
-    sel.value=state.accent||"jade";
-    $("#accentHint").textContent = have.length>1 ? "Colours you unlocked with scratch cards." : "Unlock more colours with scratch cards.";
+    const have=["jade"].concat(rw ? rw.unlocks.themes : []);
+    if(rw && !have.includes(state.accent||"jade")){ state.accent="jade"; save(); applyAccent(); }
   }
 
   function playFanfare(){
@@ -1995,7 +1944,7 @@
       const r=d.revealed||{};
       if(r.kind==="theme"){
         state.accent=r.key; save(); applyAccent(); syncAccentOptions();
-        $("#scNote").textContent="Your app now uses the "+(ACCENTS[r.key]||r.key)+" colour. Change it any time in Settings.";
+        $("#scNote").textContent="Your app now uses the "+(ACCENTS[r.key]||r.key)+" colour.";
       } else if(r.kind==="title") $("#scNote").textContent="Your new title is saved in My progress.";
       else $("#scNote").textContent="Saved in My progress. Keep practising for your next gift!";
     }catch(e){
@@ -2033,6 +1982,7 @@
   };
   $("#btnChangeStudent").onclick=()=>{ closeDlg(); openId(); };   // leave settings, open sign-in on top
 
+  if(DEV) $("#devContract").hidden=false;
   $("#contract").textContent=
 `POST score.php        (same folder, multipart/form-data)
   audio      the recording (16 kHz mono WAV — the

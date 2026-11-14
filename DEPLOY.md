@@ -85,19 +85,23 @@ they have won. It is closed by default so the gift stays the only goal on
 screen. It comes from the same `rewards.php` call - nothing to set up. Without
 the server the app falls back to the on-phone "Your session" card.
 
-## Keeping AI scoring cheap
-With "Add AI pronunciation scoring" switched on in Settings, each reading is
-still scored on the phone first (free). It goes to AI (Azure/Gemini) only when:
+## Student settings (fixed) and AI scoring
+Students have no switches. For everyone:
 
-- the phone score is 7 or more: pronunciation feedback on a halting reading is
-  noise, so the student is asked to read it smoothly first; and
-- the student has not already mastered that sentence's pronunciation (8+ on AI
-  twice). Mastered sentences are scored on the phone, free.
-
-If the AI check fails, the student still gets the phone score. To tune: AI_GATE
-in index.html, PC_PRON_MASTER_SCORE / PC_PRON_MASTER_TIMES in rewards.php.
-These checks run in the app, so they save money in normal use but are not a
-hard spending cap.
+- Every reading is scored on the phone first (free). It also goes to **Google
+  Gemini** (`score_gemini.php`) for a pronunciation check, but only when the
+  phone score is 7 or more, and not on a sentence whose pronunciation the
+  student has already mastered (8+ on AI twice). If the AI check fails, the
+  student still gets the phone score.
+- Language is English (India); sound with results is on; light mode only.
+- **`$GEMINI_KEY` must be set in `config.php`** on the server, or the AI check
+  fails and students only get phone scores. Azure (`score.php`) is no longer
+  used by the app; it stays in the repo for comparison.
+- Developer info (backend contract, cost per attempt) is hidden. Add `?dev=1`
+  to the app's address to see it.
+- To tune: AI_GATE in index.html; PC_PRON_MASTER_SCORE / PC_PRON_MASTER_TIMES
+  in rewards.php. These checks run in the app, so they save money in normal
+  use but are not a hard spending cap.
 
 ## Indian voice audio (one-time)
 The app plays pre-generated Indian-English MP3s (Azure "Neerja") for the hard
