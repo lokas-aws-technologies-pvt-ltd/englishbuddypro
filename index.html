@@ -12,7 +12,7 @@
   [hidden]{display:none!important;}
   :root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);}
 </style>
-<title>English Buddy</title>
+<title>English Buddy - AI Powered</title>
 <style>
   :root{
     /* light palette: iGiver brand (logo orange #FF9035, black, white) */
@@ -122,8 +122,8 @@
     font-weight:600; font-size:23px; letter-spacing:-.01em;
   }
   .brand .tag{
-    font-family:var(--mono); font-size:10.5px; letter-spacing:.12em;
-    text-transform:uppercase; color:var(--dim); white-space:nowrap;
+    font-family:var(--ui); font-size:11px; font-weight:700; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--accent); white-space:nowrap;
   }
   .top .sp{ flex:1 1 auto; }
   .iconbtn{
@@ -429,7 +429,7 @@
 
   /* ---------- student progress ---------- */
   .top{ flex-wrap:wrap; row-gap:8px; }                 /* never overlap: wrap as a last resort */
-  @media (max-width:440px){ .brand .tag{ display:none; } .top{ gap:8px; } }
+  @media (max-width:440px){ .brand{ flex-direction:column; align-items:flex-start; gap:0; } .top{ gap:8px; } }
   @media (max-width:400px){ .mode #modeText{ display:none; } .mode{ padding:7px; } .brand h1{ font-size:21px; } }
   @media (max-width:340px){ .top{ gap:6px; } .brand h1{ font-size:18px; } .iconbtn{ padding:6px 8px; } }
   #progressCard[hidden], #sessionCard[hidden]{ display:none !important; }
@@ -474,7 +474,7 @@
   <div class="top">
     <div class="brand">
       <h1>English&nbsp;Buddy</h1>
-      <span class="tag">read · speak · score</span>
+      <span class="tag">AI Powered</span>
     </div>
     <span class="sp"></span>
     <span class="mode" id="modePill" title="Scoring source"><span class="dot"></span><span id="modeText">Demo</span></span>
