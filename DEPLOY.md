@@ -91,6 +91,24 @@ scratch card. Everything is set in the backend, no code edits needed:
   no longer change the app's colours.
 - Settings > "Preview a scratch card" in the app shows the effect without saving.
 
+## AI usage and spending limit (backend: AI usage tab, admin only)
+Every paid AI pronunciation check is recorded (when, class, roll number, audio
+length, tokens, estimated cost, success or error). Before each check the server
+applies the limits set on this page:
+
+- **AI pronunciation checks On / Off.**
+- **Monthly limit (USD)**, default $5; 0 = no limit. Once this month's
+  estimated spend reaches it, checks pause until the 1st of next month.
+- **Checks per student per day**, default 0 (no limit).
+
+When a limit applies, students still practise and get their free phone score,
+with a short "pronunciation check is resting for now" note and no error.
+The page shows this month's spend against the limit with a month-end forecast,
+checks per day for 30 days, usage by class, the students using it most, and
+recent failed checks (e.g. a missing Gemini key). Costs are estimates from
+Google's usage counts ($0.30 text / $0.50 audio input, $2.50 output per million
+tokens, including "thinking" tokens); the Google bill is the final figure.
+
 ## Student progress view
 The "My progress" link under the gift opens the student's day streak, best
 streak, sentences tried and mastered, a 7-day chart of tries per day (tap a day

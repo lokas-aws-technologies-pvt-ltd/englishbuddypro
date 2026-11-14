@@ -34,6 +34,7 @@ if (is_file(__DIR__ . '/config.php')) {
 }
 
 function fail($httpCode, $message) {
+    if (!empty($GLOBALS['AI_STARTED'])) pc_ai_log($GLOBALS['AI_PDO'], 'azure', $GLOBALS['AI_CLASS'], $GLOBALS['AI_ROLL'], false, 0, $GLOBALS['AI_SEC'], null, null, $message);
     http_response_code($httpCode);
     echo json_encode(['error' => $message]);
     exit;
@@ -70,6 +71,16 @@ if (substr($name, -4) === '.wav') {
 
 $audioBytes = file_get_contents($tmp);
 if ($audioBytes === false) fail(500, 'Could not read the uploaded audio.');
+
+// --- AI limits from the backend: switched off, monthly limit, per-student daily checks ---
+require_once __DIR__ . '/ai_lib.php';
+$AI_CLASS = substr(trim((string)($_POST['class_code'] ?? '')), 0, 40);
+$AI_ROLL  = substr(trim((string)($_POST['roll_no'] ?? '')), 0, 40);
+$AI_PDO   = pc_ai_db();
+if ($AI_PDO && ($why = pc_ai_gate($AI_PDO, $AI_CLASS, $AI_ROLL))) pc_ai_blocked($why);   // app falls back to the phone score
+$AI_SEC     = max(0, (strlen($audioBytes) - 44) / 32000);   // 16 kHz mono 16-bit WAV
+$AI_STARTED = true;                           // from here on, failures are recorded too
+
 
 // --- build the Pronunciation-Assessment header -----------------------------
 // EnableMiscue=true makes skipped words (Omission), extra words and fillers
@@ -159,6 +170,7 @@ foreach (($nbest['Words'] ?? []) as $w) {
 $AZURE_RATE_PER_HOUR = 1.30;   // STT + pronunciation add-on
 $billedSeconds = max(0, (strlen($audioBytes) - 44) / 32000.0);
 $costUsd = $billedSeconds / 3600.0 * $AZURE_RATE_PER_HOUR;
+pc_ai_log($AI_PDO, 'azure', $AI_CLASS, $AI_ROLL, true, $costUsd, $billedSeconds, null, null);
 
 echo json_encode([
     'pronunciation' => (float)($pa['AccuracyScore']     ?? 0),

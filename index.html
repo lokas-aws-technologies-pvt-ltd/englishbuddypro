@@ -1235,9 +1235,9 @@
             const raw = await scoreLive(takeBlob, current.t, state.lang, state.engine);
             result = normalize(raw, current.t, takeAcoustics, takeDur, "live");
             engine = state.engine; cost = costFor(engine, raw);
-          }catch(aiErr){   // AI failed: keep the phone score, and say why
-            gate = { ok:false, why:"failed" };
-            showScoreError((aiErr && aiErr.message) ? aiErr.message : String(aiErr));
+          }catch(aiErr){   // AI failed: keep the phone score; a backend limit is quiet, a real error is shown
+            if(aiErr && aiErr.quiet) gate = { ok:false, why:"resting" };
+            else { gate = { ok:false, why:"failed" }; showScoreError((aiErr && aiErr.message) ? aiErr.message : String(aiErr)); }
           }
         }
       }
@@ -1263,10 +1263,15 @@
     fd.append("audio", blob, "take."+((blob.type.split("/")[1]||"webm").split(";")[0]));
     fd.append("reference", reference);
     fd.append("language", lang);
+    const stu=state.student||{};                 // for the backend's AI usage page and per-student limits
+    fd.append("class_code", stu.code||""); fd.append("roll_no", stu.roll||"");
     let res;
     try{ res=await fetch(endpoint,{method:"POST",body:fd}); }
     catch(netErr){ throw new Error("Network error reaching "+endpoint+" — "+(netErr.message||netErr)); }
     const txt=await res.text(); let body=null; try{ body=txt?JSON.parse(txt):null; }catch(e){}
+    if(res.status===429 && body && body.fallback){   // an AI limit from the backend: quietly use the phone score
+      const e=new Error("AI limit"); e.quiet=true; throw e;
+    }
     if(!res.ok){
       const detail=(body&&(body.error||body.message)) || txt.slice(0,500) || res.statusText;
       throw new Error("HTTP "+res.status+"\n"+detail);
@@ -1481,6 +1486,8 @@
       ? '<b>On-device scoring.</b> &#127908; Read it smoothly (' + AI_GATE + '+) to unlock the pronunciation check. This reading: ' + r.overall.toFixed(1) + '.'
       : why==="mastered"
       ? '<b>&#10003; Pronunciation mastered.</b> You have already nailed the pronunciation of this sentence, so this reading was scored on your phone, free.'
+      : why==="resting"
+      ? '<b>On-device scoring.</b> The pronunciation check is resting for now, so here is your score from the phone. Keep practising!'
       : why==="failed"
       ? '<b>On-device scoring.</b> The pronunciation check could not run this time (see the red box), so here is your score from the phone.'
       : '<b>On-device scoring.</b> Pace, pauses and confidence, measured on your phone — no internet, no cost. Smooth readings (7+) also get a pronunciation check.';

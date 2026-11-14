@@ -80,6 +80,23 @@ function pc_ensure_schema($pdo){
     v TEXT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+  // one row per paid AI check (Google/Azure): usage, cost and the monthly limit
+  $pdo->exec("CREATE TABLE IF NOT EXISTS ai_calls (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    engine        VARCHAR(10) NOT NULL,
+    class_code    VARCHAR(40) NULL,
+    roll_no       VARCHAR(40) NULL,
+    ok            TINYINT(1) NOT NULL DEFAULT 1,
+    audio_seconds DECIMAL(6,2) NULL,
+    tokens_in     INT NULL,
+    tokens_out    INT NULL,
+    cost_usd      DECIMAL(10,6) NOT NULL DEFAULT 0,
+    error         VARCHAR(200) NULL,
+    KEY idx_time (created_at),
+    KEY idx_student (class_code, roll_no, created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
   // gifts behind the scratch cards, managed in the backend (card N = gift N, the last repeats)
   $pdo->exec("CREATE TABLE IF NOT EXISTS gifts (
     id          INT AUTO_INCREMENT PRIMARY KEY,

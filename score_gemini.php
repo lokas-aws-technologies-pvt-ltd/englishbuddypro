@@ -27,10 +27,13 @@ if (is_file(__DIR__ . '/config.php')) require __DIR__ . '/config.php';
 
 // gemini-3.5-flash-lite per-1M-token USD rates (verify if you change the model).
 $R_IN_TEXT  = 0.30;   // input tokens (text)
-$R_IN_AUDIO = 0.30;   // input tokens (audio)
+$R_IN_AUDIO = 0.50;   // input tokens (audio) - Google's audio rate is higher than text
 $R_OUT      = 2.50;   // output tokens
 
-function fail($c,$m){ http_response_code($c); echo json_encode(['error'=>$m]); exit; }
+function fail($c,$m){
+  if (!empty($GLOBALS['AI_STARTED'])) pc_ai_log($GLOBALS['AI_PDO'], 'gemini', $GLOBALS['AI_CLASS'], $GLOBALS['AI_ROLL'], false, 0, $GLOBALS['AI_SEC'], null, null, $m);
+  http_response_code($c); echo json_encode(['error'=>$m]); exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail(405,'Use POST.');
 if ($GEMINI_KEY === '') fail(500,'Server is missing GEMINI_API_KEY (set $GEMINI_KEY in config.php).');
@@ -51,6 +54,15 @@ $mime = (substr($name,-4)==='.wav') ? 'audio/wav'
       : ((substr($name,-4)==='.ogg') ? 'audio/ogg'
       : ((substr($name,-4)==='.mp3') ? 'audio/mpeg'
       : ((substr($name,-4)==='.m4a'||substr($name,-4)==='.aac') ? 'audio/aac' : 'audio/wav')));
+
+// --- AI limits from the backend: switched off, monthly limit, per-student daily checks ---
+require_once __DIR__ . '/ai_lib.php';
+$AI_CLASS = substr(trim((string)($_POST['class_code'] ?? '')), 0, 40);
+$AI_ROLL  = substr(trim((string)($_POST['roll_no'] ?? '')), 0, 40);
+$AI_PDO   = pc_ai_db();
+if ($AI_PDO && ($why = pc_ai_gate($AI_PDO, $AI_CLASS, $AI_ROLL))) pc_ai_blocked($why);   // app falls back to the phone score
+$AI_SEC     = max(0, ($size - 44) / 32000);   // 16 kHz mono 16-bit WAV
+$AI_STARTED = true;                           // from here on, failures are recorded too
 
 $audioB64 = base64_encode(file_get_contents($tmp));
 
@@ -136,7 +148,7 @@ if (!is_array($out) || !isset($out['words']) || !is_array($out['words'])) {
 
 // --- cost from real token usage ---
 $um = $data['usageMetadata'] ?? [];
-$outTok = $um['candidatesTokenCount'] ?? 0;
+$outTok = ($um['candidatesTokenCount'] ?? 0) + ($um['thoughtsTokenCount'] ?? 0);   // thinking is billed as output
 $audioTok = 0; $textTok = 0;
 foreach (($um['promptTokensDetails'] ?? []) as $d) {
   if (($d['modality'] ?? '') === 'AUDIO') $audioTok += ($d['tokenCount'] ?? 0);
@@ -144,6 +156,7 @@ foreach (($um['promptTokensDetails'] ?? []) as $d) {
 }
 if ($audioTok === 0 && $textTok === 0) $textTok = $um['promptTokenCount'] ?? 0; // fallback if no modality split
 $costUsd = ($audioTok*$R_IN_AUDIO + $textTok*$R_IN_TEXT + $outTok*$R_OUT) / 1000000.0;
+pc_ai_log($AI_PDO, 'gemini', $AI_CLASS, $AI_ROLL, true, $costUsd, $AI_SEC, $audioTok + $textTok, $outTok);
 
 // --- map to the page's contract (words carry no timestamps; the page measures pauses itself) ---
 $words = [];
