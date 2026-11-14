@@ -80,6 +80,17 @@ function pc_ensure_schema($pdo){
     v TEXT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+  // gifts behind the scratch cards, managed in the backend (card N = gift N, the last repeats)
+  $pdo->exec("CREATE TABLE IF NOT EXISTS gifts (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    position    INT NOT NULL DEFAULT 0,
+    name        VARCHAR(80) NOT NULL,
+    description VARCHAR(200) NULL,
+    image       VARCHAR(120) NULL,
+    active      TINYINT(1) NOT NULL DEFAULT 1,
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
   // scratch cards: one row per unlocked card; scratched_at set when revealed
   $pdo->exec("CREATE TABLE IF NOT EXISTS rewards (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -104,3 +115,29 @@ function pc_set_setting($pdo, $k, $v) {
 }
 /* Roster only (default ON): students must be added in the backend before they can sign in. */
 function pc_roster_only($pdo) { return pc_setting($pdo, 'roster_only', '1') === '1'; }
+
+/* ---------------- points and gift settings (changed in the backend) ---------------- */
+function pc_points_defaults() {
+  return ['gift_steps'=>'100,250,450,700,1000', 'gift_step_after'=>'350', 'practice_cap'=>'60', 'pb_rate'=>'10', 'mastery_bonus'=>'20'];
+}
+/* Current points settings as numbers: steps (int[]), after, cap, pb_rate, mastery_bonus. */
+function pc_points_settings($pdo) {
+  $d = pc_points_defaults(); $v = [];
+  foreach ($d as $k => $def) $v[$k] = pc_setting($pdo, $k, $def);
+  $steps = array_values(array_filter(array_map('intval', explode(',', $v['gift_steps'])), function ($x) { return $x > 0; }));
+  if (!$steps) $steps = array_map('intval', explode(',', $d['gift_steps']));
+  return ['steps'=>$steps, 'after'=>max(1, (int)$v['gift_step_after']), 'cap'=>max(1, (int)$v['practice_cap']),
+          'pb_rate'=>max(0, (int)$v['pb_rate']), 'mastery_bonus'=>max(0, (int)$v['mastery_bonus'])];
+}
+
+/* Active gifts in order. The first time, it starts with the original badge gifts (no pictures). */
+function pc_active_gifts($pdo) {
+  if ((int)$pdo->query("SELECT COUNT(*) FROM gifts")->fetchColumn() === 0) {
+    $ins = $pdo->prepare("INSERT INTO gifts (position, name, description) VALUES (?,?,?)");
+    foreach ([['Brave Beginner', 'For showing up and trying again.'], ['Smooth Talker', 'Your reading is flowing better.'],
+              ['Office Ready', 'You sound ready for the office.'], ['Word Master', 'You have mastered tough office words.'],
+              ['Gold Star', 'Another step up. Keep going!']] as $i => [$n, $d]) $ins->execute([$i + 1, $n, $d]);
+  }
+  return $pdo->query("SELECT id, position, name, description, image FROM gifts WHERE active=1 ORDER BY position, id")->fetchAll();
+}
+function pc_gift_image_url($file) { return $file ? 'uploads/gifts/' . rawurlencode($file) : null; }

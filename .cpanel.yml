@@ -18,6 +18,7 @@ deployment:
     - /bin/cp -f admin_lib.php $DEPLOYPATH
     - /bin/cp -f admin_students.php $DEPLOYPATH
     - /bin/cp -f admin_users.php $DEPLOYPATH
+    - /bin/cp -f admin_gifts.php $DEPLOYPATH
     - /bin/cp -f signin.php $DEPLOYPATH
     - /bin/cp -f rewards.php $DEPLOYPATH
     - /bin/cp -f .htaccess $DEPLOYPATH

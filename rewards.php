@@ -36,34 +36,46 @@ $roll = substr(trim((string)($d['roll_no'] ?? '')), 0, 40);
 if ($code === '' || $roll === '') { http_response_code(400); echo json_encode(['error'=>'missing class_code / roll_no']); exit; }
 $action = (string)($d['action'] ?? 'status');
 
-/* ---------------- rules (tune these after a few weeks of real data) ---------------- */
-const PC_CARD_STEPS      = [100, 250, 450, 700, 1000];  // points needed for cards 1..5
-const PC_STEP_AFTER      = 350;                          // then every +350
+/* ---------------- rules ----------------
+   Gift steps, the step after them, the daily practice cap, personal-best points and the
+   mastery bonus are set in the backend (admin_gifts.php) and defined below once the
+   database is open. The rest are fixed here. */
 const PC_BEST_PER_DAY    = 2;     // best N tries per sentence per day count
 const PC_MAX_PER_DAY     = 30;    // at most this many counted tries a day
-const PC_PRACTICE_CAP    = 60;    // at most this many practice points a day
 const PC_MIN_DURATION_S  = 1.0;   // shorter takes earn nothing
-const PC_PB_RATE         = 10;    // improvement points per 1.0 of score gained
 const PC_MASTERY_SCORE   = 8.0;
 const PC_MASTERY_DAYS    = 2;
-const PC_MASTERY_BONUS   = 20;
 const PC_PRON_MASTER_SCORE = 8.0; // AI pronunciation score that counts toward "pronunciation mastered"
 const PC_PRON_MASTER_TIMES = 2;   // ...this many times; the app then stops sending that sentence to AI
 
-/* ---------------- the in-app reward behind each card ---------------- */
-function pc_reward($n) {
+/* ---------------- the gift behind each card ----------------
+   Card N holds gift N from the backend list; after the last gift, the last one repeats.
+   The gift is stored on the card when it unlocks (reward_key "g<id>"), so later edits to
+   the list never change a gift a student has already won. */
+function pc_gift_for_card($pdo, $n) {
+  $gifts = pc_active_gifts($pdo);
+  if (!$gifts) return 'star';
+  return 'g' . $gifts[min($n, count($gifts)) - 1]['id'];
+}
+/* Gifts handed out before the backend existed: shown as they were, with no effects. */
+function pc_legacy_gift($key) {
   static $cat = [
-    1 => ['key'=>'brave',      'kind'=>'badge', 'icon'=>'🏅', 'name'=>'Brave Beginner badge', 'desc'=>'For showing up and trying again.'],
-    2 => ['key'=>'saffron',    'kind'=>'theme', 'icon'=>'🎨', 'name'=>'Saffron colour theme', 'desc'=>'A warm new colour for your app.'],
-    3 => ['key'=>'smooth',     'kind'=>'badge', 'icon'=>'🌊', 'name'=>'Smooth Talker badge',  'desc'=>'Your reading is flowing better.'],
-    4 => ['key'=>'ocean',      'kind'=>'theme', 'icon'=>'🎨', 'name'=>'Ocean colour theme',   'desc'=>'A calm blue look for your app.'],
-    5 => ['key'=>'office',     'kind'=>'title', 'icon'=>'💼', 'name'=>'"Office Ready" title', 'desc'=>'Shown next to your name.'],
-    6 => ['key'=>'rose',       'kind'=>'theme', 'icon'=>'🎨', 'name'=>'Rose colour theme',    'desc'=>'A bright new colour for your app.'],
-    7 => ['key'=>'wordmaster', 'kind'=>'badge', 'icon'=>'📚', 'name'=>'Word Master badge',    'desc'=>'You have mastered tough office words.'],
+    'brave'=>['🏅','Brave Beginner badge','For showing up and trying again.'], 'saffron'=>['🎨','Saffron colour','A colour gift (colours are now fixed).'],
+    'smooth'=>['🌊','Smooth Talker badge','Your reading is flowing better.'], 'ocean'=>['🎨','Ocean colour','A colour gift (colours are now fixed).'],
+    'office'=>['💼','"Office Ready" title','You sound ready for the office.'], 'rose'=>['🎨','Rose colour','A colour gift (colours are now fixed).'],
+    'wordmaster'=>['📚','Word Master badge','You have mastered tough office words.'], 'star'=>['⭐','Gold Star','Another step up. Keep going!'],
   ];
-  $r = $cat[$n] ?? ['key'=>'star', 'kind'=>'star', 'icon'=>'⭐', 'name'=>'Gold Star', 'desc'=>'Another step up. Keep going!'];
-  $r['no'] = $n;
-  return $r;
+  return $cat[$key] ?? ['🎁', 'Gift', 'A gift for your practice.'];
+}
+/* What the app shows for a card. */
+function pc_card_view($pdo, $key, $n) {
+  if (preg_match('/^g(\d+)$/', (string)$key, $m)) {
+    $st = $pdo->prepare("SELECT name, description, image FROM gifts WHERE id=?");
+    $st->execute([(int)$m[1]]);
+    if ($g = $st->fetch()) return ['no'=>$n, 'kind'=>'gift', 'key'=>$key, 'icon'=>'🎁', 'name'=>$g['name'], 'desc'=>(string)$g['description'], 'image'=>pc_gift_image_url($g['image'])];
+  }
+  [$icon, $name, $desc] = pc_legacy_gift($key);
+  return ['no'=>$n, 'kind'=>'gift', 'key'=>(string)$key, 'icon'=>$icon, 'name'=>$name, 'desc'=>$desc, 'image'=>null];
 }
 
 function pc_threshold($n) {
@@ -173,7 +185,7 @@ function pc_pron_mastered($pdo, $sid) {
 }
 
 function pc_cards($pdo, $sid) {
-  $st = $pdo->prepare("SELECT card_no, unlocked_at, scratched_at FROM rewards WHERE student_id=? ORDER BY card_no");
+  $st = $pdo->prepare("SELECT card_no, reward_key, unlocked_at, scratched_at FROM rewards WHERE student_id=? ORDER BY card_no");
   $st->execute([$sid]);
   return $st->fetchAll();
 }
@@ -212,7 +224,7 @@ function pc_status($pdo, $sid, $name) {
       $n = count($cards) + 1;
       if ($c['total'] < pc_threshold($n)) break;
       $pdo->prepare("INSERT IGNORE INTO rewards (student_id, card_no, reward_key, unlocked_at) VALUES (?,?,?,NOW())")
-          ->execute([$sid, $n, pc_reward($n)['key']]);
+          ->execute([$sid, $n, pc_gift_for_card($pdo, $n)]);
       $cards = pc_cards($pdo, $sid);
     }
   }
@@ -250,16 +262,13 @@ function pc_status($pdo, $sid, $name) {
   else                                  $hint = ['kind'=>'new'];
 
   // what the scratched cards have unlocked
+  // colour themes are retired (the app keeps the iGiver colours), so themes stay empty
   $cardsOut = []; $themes = []; $badges = []; $title = null; $stars = 0;
   foreach ($cards as $cd) {
-    $rw = pc_reward((int)$cd['card_no']);
+    $rw = pc_card_view($pdo, $cd['reward_key'], (int)$cd['card_no']);
     $rw['scratched'] = $cd['scratched_at'] !== null;
     $cardsOut[] = $rw;
-    if (!$rw['scratched']) continue;
-    if ($rw['kind'] === 'theme') $themes[] = $rw['key'];
-    elseif ($rw['kind'] === 'badge') $badges[] = ['key'=>$rw['key'], 'icon'=>$rw['icon'], 'name'=>preg_replace('/ badge$/', '', $rw['name'])];
-    elseif ($rw['kind'] === 'title') $title = 'Office Ready';
-    elseif ($rw['kind'] === 'star') $stars++;
+    if ($rw['scratched']) $badges[] = ['key'=>$rw['key'], 'icon'=>$rw['icon'], 'name'=>$rw['name'], 'image'=>$rw['image']];
   }
 
   return [
@@ -280,6 +289,12 @@ function pc_status($pdo, $sid, $name) {
 try {
   require __DIR__ . '/db.php';
   $pdo = pc_pdo();
+  $PS = pc_points_settings($pdo);
+  define('PC_CARD_STEPS', $PS['steps']);
+  define('PC_STEP_AFTER', $PS['after']);
+  define('PC_PRACTICE_CAP', $PS['cap']);
+  define('PC_PB_RATE', $PS['pb_rate']);
+  define('PC_MASTERY_BONUS', $PS['mastery_bonus']);
 
   $st = $pdo->prepare("SELECT id, name FROM students WHERE class_code=? AND roll_no=?");
   $st->execute([$code, $roll]);
@@ -296,7 +311,9 @@ try {
     $pdo->prepare("UPDATE rewards SET scratched_at=NOW() WHERE student_id=? AND card_no=? AND scratched_at IS NULL")
         ->execute([$sid, $no]);
     $out = pc_status($pdo, $sid, $name);
-    $out['revealed'] = pc_reward($no);
+    $k = $pdo->prepare("SELECT reward_key FROM rewards WHERE student_id=? AND card_no=?");
+    $k->execute([$sid, $no]);
+    $out['revealed'] = pc_card_view($pdo, $k->fetchColumn(), $no);
     echo json_encode($out);
     exit;
   }

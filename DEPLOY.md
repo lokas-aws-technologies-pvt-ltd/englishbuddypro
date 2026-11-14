@@ -70,22 +70,26 @@ the Students page. Students who were removed are asked to sign in again.
 The old shared teacher passcode no longer opens the dashboard; `teacher.php`
 now needs a login.
 
-## Scratch-card rewards (rewards.php)
-Students see one goal: a mystery gift at the top of the app, a bar that fills
-toward it, and one next step. When the bar is full they scratch a card to reveal
-an in-app reward (badges, colour themes, a title). It uses the same MySQL
-database - no extra setup; the `rewards` table creates itself.
+## Gifts and points (backend: Gifts & points tab, admin only)
+Students earn points for practising and more for improving; a full bar unlocks a
+scratch card. Everything is set in the backend, no code edits needed:
 
-- Points: each try earns its score (best 2 tries per sentence per day count, max
-  30 tries a day), up to 60 practice points a day. Beating your own best earns
-  10 per point gained; scoring 8+ on a sentence on 2 different days masters it
-  (+20). Improvement points have no daily limit.
-- A card unlocks as soon as the points reach 100, 250, 450, 700, 1000, then
-  every +350. A full bar always means a gift.
-- The gift stays hidden until it is scratched. After each reading the student
-  sees one "+N points" chip and the bar sliding forward.
-- Tune the numbers at the top of `rewards.php` once you have a few weeks of data.
-- Settings > "Preview a scratch card" shows the effect without saving anything.
+- **Points rules:** gift steps (default 100, 250, 450, 700, 1000), then every +N
+  (default 350); daily practice points (default 60); points per +1.0 personal
+  best (default 10); mastery bonus (default 20). "Use defaults" restores them.
+  Only the best 2 tries of a sentence count each day; very short takes earn
+  nothing; personal bests and mastery have no daily limit.
+- **Gifts:** card 1 = gift 1, card 2 = gift 2 ... the last gift repeats. Each
+  gift has a name, a short line and a picture (JPG/PNG/GIF/WebP under 3 MB,
+  shrunk to 512 px). Reorder, edit, replace or remove pictures, remove gifts.
+  A won gift is stored on the student's card, so later edits never change it.
+- Pictures are saved in `uploads/gifts/` on the server (not in GitHub; deploys
+  never touch it). That folder must be writable by PHP; it is created
+  automatically and blocks scripts from running.
+- **Unopened gifts:** who has a gift waiting to be scratched.
+- Old colour-theme gifts (from before) still show in students' collections but
+  no longer change the app's colours.
+- Settings > "Preview a scratch card" in the app shows the effect without saving.
 
 ## Student progress view
 The "My progress" link under the gift opens the student's day streak, best

@@ -204,8 +204,9 @@ function pc_page_start($title, $active, $me = null) {
 CSS;
   echo "</head>\n<body>\n<div class=\"wrap\">\n";
   if ($me) {
-    $tabs = ['overview' => ['Overview', 'teacher.php'], 'students' => ['Students', 'admin_students.php'],
-             'users' => [pc_is_admin($me) ? 'Logins' : 'My account', 'admin_users.php']];
+    $tabs = ['overview' => ['Overview', 'teacher.php'], 'students' => ['Students', 'admin_students.php']];
+    if (pc_is_admin($me)) $tabs['gifts'] = ['Gifts & points', 'admin_gifts.php'];
+    $tabs['users'] = [pc_is_admin($me) ? 'Logins' : 'My account', 'admin_users.php'];
     echo '<div class="top"><a class="brand" href="teacher.php"><img src="img/igiver-logo.png" alt="iGiver"><div><h1>English Buddy</h1><div class="tag">Backend</div></div></a><span class="sp"></span>';
     echo '<div class="me"><b>' . h($me['name'] ?: $me['username']) . '</b><br>' . (pc_is_admin($me) ? 'Admin · all classes' : 'Teacher · ' . h($me['classes'] ? implode(', ', $me['classes']) : 'no classes yet')) . '</div>';
     echo '<a class="iconbtn" href="admin.php?logout=1">Sign out</a></div>';

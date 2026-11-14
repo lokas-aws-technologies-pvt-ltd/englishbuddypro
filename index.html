@@ -415,10 +415,12 @@
   .gain .rw-barlab{ flex:1 0 100%; margin-top:0; }
 
   /* scratch card */
-  .scratch{ position:relative; width:100%; max-width:320px; height:180px; margin:4px auto 0; border-radius:14px; overflow:hidden;
+  .scratch{ position:relative; width:100%; max-width:320px; height:220px; margin:4px auto 0; border-radius:14px; overflow:hidden;
     border:1px solid var(--line); background:var(--accent-soft); user-select:none; -webkit-user-select:none; }
   .scratch-prize{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:14px; gap:4px; }
   .sp-icon{ font-size:46px; line-height:1; }
+  .sp-img{ max-width:72%; max-height:100px; border-radius:10px; object-fit:contain; display:block; }
+  .rw-chip img{ width:22px; height:22px; border-radius:5px; object-fit:cover; vertical-align:middle; margin-right:5px; }
   .sp-name{ font-family:var(--display); font-weight:600; font-size:19px; line-height:1.25; }
   .sp-desc{ font-size:13px; color:var(--muted); }
   #scCanvas{ position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:grab; transition:opacity .45s ease; }
@@ -737,6 +739,7 @@
     <div class="scratch" id="scBox">
       <div class="scratch-prize" id="scPrize">
         <div class="sp-icon" id="scIcon"></div>
+        <img class="sp-img" id="scImg" alt="" hidden>
         <div class="sp-name" id="scName"></div>
         <div class="sp-desc" id="scDesc"></div>
       </div>
@@ -1744,9 +1747,12 @@
 
     // earned rewards shelf
     const sh=$("#rwShelf"); sh.innerHTML="";
-    const chip=t=>{ const c=document.createElement("span"); c.className="rw-chip"; c.textContent=t; sh.appendChild(c); };
+    const chip=(t,image)=>{ const c=document.createElement("span"); c.className="rw-chip";
+      if(image){ const i=document.createElement("img"); i.src=image; i.alt=""; i.loading="lazy"; c.appendChild(i); c.appendChild(document.createTextNode(t)); }
+      else c.textContent=t;
+      sh.appendChild(c); };
     if(rw.unlocks.title) chip("💼 "+rw.unlocks.title);
-    rw.unlocks.badges.forEach(b=>chip(b.icon+" "+b.name));
+    rw.unlocks.badges.forEach(b=>chip(b.image ? b.name : b.icon+" "+b.name, b.image));
     rw.unlocks.themes.forEach(k=>chip("🎨 "+(ACCENTS[k]||k)));
     if(rw.unlocks.stars) chip("⭐ Gold Star ×"+rw.unlocks.stars);
   }
@@ -1917,11 +1923,14 @@
   let sc=null;
   function openScratch(cardNo, preview){
     let reward;
-    if(preview) reward={ icon:"🎨", name:"Saffron colour theme", desc:"Preview only — nothing is unlocked." };
+    if(preview) reward={ icon:"🎁", name:"Your gift", desc:"Preview only — nothing is unlocked.", image:null };
     else { reward=((rw&&rw.cards)||[]).find(c=>c.no===cardNo); if(!reward) return; }
     sc={ cardNo, preview:!!preview, done:false, down:false, last:null, strokes:0 };
     $("#scTitle").textContent = preview ? "Scratch card preview" : "Scratch card #"+cardNo;
     $("#scIcon").textContent=reward.icon; $("#scName").textContent=reward.name; $("#scDesc").textContent=reward.desc;
+    const img=$("#scImg");                            // the gift's picture, when the backend has one
+    if(reward.image){ img.src=reward.image; img.hidden=false; $("#scIcon").hidden=true; }
+    else { img.removeAttribute("src"); img.hidden=true; $("#scIcon").hidden=false; }
     $("#scPrize").style.visibility="hidden";          // hidden until the foil is painted
     $("#scNote").textContent=""; $("#scRevealAll").hidden=false;
     scCv.style.display="block"; scCv.style.opacity="1";

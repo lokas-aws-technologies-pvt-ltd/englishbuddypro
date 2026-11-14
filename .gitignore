@@ -5,3 +5,5 @@ config.php
 .DS_Store
 Thumbs.db
 *.log
+# gift pictures uploaded in the backend live only on the server
+uploads/
